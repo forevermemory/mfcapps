@@ -39,7 +39,7 @@
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>MultiByte</CharacterSet>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
@@ -53,8 +53,8 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Static</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+    <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -183,7 +183,8 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CAssistDialog.cpp" />
+    <ClCompile Include="CMainDialog.cpp" />
+    <ClCompile Include="GlobalInfo.cpp" />
     <ClCompile Include="MFCLibrary1.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -197,8 +198,9 @@
     <None Include="res\MFCLibrary1.rc2" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="CAssistDialog.h" />
+    <ClInclude Include="CMainDialog.h" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="GlobalInfo.h" />
     <ClInclude Include="MFCLibrary1.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Resource.h" />
@@ -206,6 +208,9 @@
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="MFCLibrary1.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\run.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

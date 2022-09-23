@@ -17,8 +17,9 @@ void CTrayIcon::InitTrayIcon(CWnd* pWnd)
 {
 	m_nid.cbSize = sizeof(NOTIFYICONDATA);
 	m_nid.hWnd = pWnd->GetSafeHwnd();
+
 	CString str;
-	pWnd->GetWindowTextA(str);
+	pWnd->GetWindowText(str);
 	strcpy(m_nid.szTip, str);
 
 	// 单机或者双击发送自定义消息

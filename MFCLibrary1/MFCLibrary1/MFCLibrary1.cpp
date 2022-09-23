@@ -4,8 +4,8 @@
 #include "pch.h"
 #include "framework.h"
 #include "MFCLibrary1.h"
-#include "CAssistDialog.h"
-
+#include "GlobalInfo.h"
+#include "CMainDialog.h"
 
 
 #ifdef _DEBUG
@@ -49,13 +49,14 @@ CMFCLibrary1App::CMFCLibrary1App()
 {
 	// TODO:  在此处添加构造代码，
 	// 将所有重要的初始化放置在 InitInstance 中
+	m_Thread = NULL;
 }
 
 CMFCLibrary1App::~CMFCLibrary1App()
 {
 	// TODO:  在此处添加构造代码，
-	m_Dlg.CloseWindow();
-	m_Dlg.OnOK();
+	//m_Dlg.CloseWindow();
+	//m_Dlg.OnOK();
 }
 
 // 唯一的 CMFCLibrary1App 对象
@@ -65,14 +66,38 @@ CMFCLibrary1App theApp;
 
 // CMFCLibrary1App 初始化
 
+
+
+DWORD WINAPI ShowMainDlg(LPVOID pParam)
+{
+
+	AFX_MANAGE_STATE(AfxGetStaticModuleState());
+	CMainDialog  m_Dlg;
+	m_Dlg.DoModal();
+	
+	return 0;
+}
+
 BOOL CMFCLibrary1App::InitInstance()
 {
 	CWinApp::InitInstance();
 	
-
-	m_Dlg.Create(IDD_CAssistDialog, NULL);
-	m_Dlg.ShowWindow(SW_SHOW);
-
+	m_Thread = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ShowMainDlg,
+		NULL, NULL, NULL);
 
 	return TRUE;
 }
+
+int CMFCLibrary1App::ExitInstance()
+{
+
+	// 发送退出消息给对话框  SendMessage同步执行
+	::SendMessage(GlobalInfo::GetInstance()->m_hWndDlgMain, WM_DLL_EXIT_DLG, 0, 0);
+
+	// 退出线程
+	::TerminateThread(m_Thread, 0);
+	::WaitForSingleObject(m_Thread, INFINITE);
+
+	
+	return CWinApp::ExitInstance();
+ }

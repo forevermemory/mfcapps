@@ -71,5 +71,8 @@
     <Image Include="..\..\..\..\Desktop\MFC经典资源ICON—— 常用ICON格式图标5000个\VC MFC 常用ICON格式图标5000个\图标\pop_soft\cuteftp01.ico">
       <Filter>资源文件</Filter>
     </Image>
+    <Image Include="res\cuteftp01.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>

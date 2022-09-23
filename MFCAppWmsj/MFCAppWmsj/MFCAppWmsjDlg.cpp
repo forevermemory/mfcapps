@@ -112,6 +112,8 @@ BOOL CMFCAppWmsjDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	SetWindowText("完美世界v1.0");
 
+	m_Hmodule = NULL;
+
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -191,12 +193,13 @@ int CAboutDlg::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return 0;
 }
 
+#define FZ_DLL_PATH "C:\\Users\\Administrator\\Desktop\\wmsj\\MFCLibrary1\\Release\\MFCLibrary1.dll" 
 
 void CMFCAppWmsjDlg::OnBnClickedButton1()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	
-	m_Hmodule = LoadLibrary("MFCLibrary1.dll");
+	m_Hmodule = LoadLibrary(FZ_DLL_PATH);
 
 }
 
@@ -204,14 +207,15 @@ void CMFCAppWmsjDlg::OnBnClickedButton1()
 void CMFCAppWmsjDlg::OnBnClickedButton2()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	if (m_Hmodule)
+	//CString str;
+	//str.Format("释放成功: %d", m_Hmodule);
+	//AfxMessageBox(str);
+
+	if (m_Hmodule != NULL)
 	{
-		FreeLibrary(m_Hmodule);
+		BOOL Res = FreeLibrary(m_Hmodule);
 		m_Hmodule = NULL;
 		//BOOL Res = FreeLibrary(m_Hmodule);
-		//CString str;
-		//str.Format("释放成功: %d", Res);
-		//MessageBox(str);
 	}
 
 }

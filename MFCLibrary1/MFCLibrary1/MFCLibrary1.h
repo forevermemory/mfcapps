@@ -8,7 +8,7 @@
 #endif
 
 #include "resource.h"		// 主符号
-#include "CAssistDialog.h"		
+#include "CMainDialog.h"		
 
 
 // CMFCLibrary1App
@@ -24,11 +24,14 @@ public:
 // 重写
 public:
 	virtual BOOL InitInstance();
+	virtual int ExitInstance();
 
 	DECLARE_MESSAGE_MAP()
 
 
 public:
+	HANDLE m_Thread;
+	HWND m_Hwnd;
 
-	CAssistDialog  m_Dlg;
+
 };

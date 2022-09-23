@@ -21,7 +21,10 @@
     <ClCompile Include="pch.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CAssistDialog.cpp">
+    <ClCompile Include="GlobalInfo.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CMainDialog.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -49,7 +52,10 @@
     <ClInclude Include="pch.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CAssistDialog.h">
+    <ClInclude Include="GlobalInfo.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CMainDialog.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -57,5 +63,10 @@
     <ResourceCompile Include="MFCLibrary1.rc">
       <Filter>资源文件</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\run.ico">
+      <Filter>资源文件</Filter>
+    </Image>
   </ItemGroup>
 </Project>
