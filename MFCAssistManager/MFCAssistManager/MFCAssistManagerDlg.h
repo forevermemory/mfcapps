@@ -94,6 +94,7 @@ public:
 	HWND GetGameWnd(DWORD pid);
 	int FindPidFromCur(ASSIST_VECTOR& data, DWORD pid);
 
+
 protected:
 	afx_msg LRESULT OnMsgIconNotify(WPARAM wParam, LPARAM lParam);
 public:
@@ -109,4 +110,5 @@ public:
 	afx_msg void OnBnClickedButtonExitAssist();
 	afx_msg void OnBnClickedButtonShowHideGame();
 	afx_msg void OnBnClickedButtonShowHideAssist();
+	afx_msg void OnBnClickedButton8();
 };

@@ -185,6 +185,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CrashDump.h" />
     <ClInclude Include="CTrayIcon.h" />
     <ClInclude Include="data.h" />
     <ClInclude Include="framework.h" />

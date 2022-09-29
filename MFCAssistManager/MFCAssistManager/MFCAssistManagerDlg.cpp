@@ -7,6 +7,7 @@
 #include "MFCAssistManager.h"
 #include "MFCAssistManagerDlg.h"
 #include "afxdialogex.h"
+#include "CrashDump.h"
 #include "data.h"
 #include <stdio.h>
 
@@ -54,6 +55,7 @@ BEGIN_MESSAGE_MAP(CMFCAssistManagerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_EXIT_ASSIST, &CMFCAssistManagerDlg::OnBnClickedButtonExitAssist)
 	ON_BN_CLICKED(IDC_BUTTON_SHOW_HIDE_GAME, &CMFCAssistManagerDlg::OnBnClickedButtonShowHideGame)
 	ON_BN_CLICKED(IDC_BUTTON_SHOW_HIDE_ASSIST, &CMFCAssistManagerDlg::OnBnClickedButtonShowHideAssist)
+	ON_BN_CLICKED(IDC_BUTTON8, &CMFCAssistManagerDlg::OnBnClickedButton8)
 END_MESSAGE_MAP()
 
 
@@ -88,6 +90,10 @@ BOOL CMFCAssistManagerDlg::OnInitDialog()
 
 	// 加载右键托盘菜单图标
 	m_Rmenu.LoadMenu(IDR_MENU1);
+
+	//SetUnhandledExceptionFilter(exceptionHandler);
+	SetUnhandledExceptionFilter(unhandled_handler);
+
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -690,4 +696,13 @@ void CMFCAssistManagerDlg::OnBnClickedButtonShowHideAssist()
 		return;
 
 	::ShowWindow(data->assist_hwnd, ::IsWindowVisible(data->assist_hwnd) ? SW_HIDE : SW_SHOW);
+}
+
+
+
+void CMFCAssistManagerDlg::OnBnClickedButton8()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	int* a = NULL;
+	*a = 1;
 }

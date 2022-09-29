@@ -24,6 +24,7 @@
 #define IDC_BUTTON_BROWSER              1007
 #define IDC_BUTTON7                     1008
 #define IDC_BUTTON_SHOW_HIDE_GAME       1008
+#define IDC_BUTTON8                     1009
 #define ID_32771                        32771
 #define ID_32772                        32772
 #define ID_32773                        32773
@@ -40,7 +41,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        132
 #define _APS_NEXT_COMMAND_VALUE         32780
-#define _APS_NEXT_CONTROL_VALUE         1008
+#define _APS_NEXT_CONTROL_VALUE         1010
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
