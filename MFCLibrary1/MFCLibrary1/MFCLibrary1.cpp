@@ -70,7 +70,6 @@ CMFCLibrary1App theApp;
 
 DWORD WINAPI ShowMainDlg(LPVOID pParam)
 {
-
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 	CMainDialog  m_Dlg;
 	m_Dlg.DoModal();
@@ -90,14 +89,12 @@ BOOL CMFCLibrary1App::InitInstance()
 
 int CMFCLibrary1App::ExitInstance()
 {
-
-	// 发送退出消息给对话框  SendMessage同步执行
+	// 发送退出消息给对话框  SendMessage同步执行 WM_DLL_EXIT_DLG 自定义消息
 	::SendMessage(GlobalInfo::GetInstance()->m_hWndDlgMain, WM_DLL_EXIT_DLG, 0, 0);
 
 	// 退出线程
 	::TerminateThread(m_Thread, 0);
 	::WaitForSingleObject(m_Thread, INFINITE);
 
-	
 	return CWinApp::ExitInstance();
  }

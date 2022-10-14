@@ -27,6 +27,15 @@
     <ClCompile Include="CMainDialog.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Form1.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Form2.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Form3.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="MFCLibrary1.def">
@@ -56,6 +65,18 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CMainDialog.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Form1.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Form2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Form3.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="FormBase.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

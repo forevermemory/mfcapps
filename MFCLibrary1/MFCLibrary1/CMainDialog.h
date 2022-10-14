@@ -29,4 +29,5 @@ public:
 public:
 	CListCtrl m_Assist_items;
 	virtual BOOL OnInitDialog();
+	afx_msg void OnClickListItems(NMHDR* pNMHDR, LRESULT* pResult);
 };
