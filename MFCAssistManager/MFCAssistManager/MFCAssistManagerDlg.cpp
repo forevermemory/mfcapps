@@ -667,12 +667,12 @@ void CMFCAssistManagerDlg::OnBnClickedButtonShowHideGame()
 	if (data == NULL)
 		return;
 
-	HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, data->pid);
-	if (NULL == hProcess)
-	{
-		AfxMessageBox("打开进程失败");
-		return;
-	}
+	//HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, data->pid);
+	//if (NULL == hProcess)
+	//{
+	//	AfxMessageBox("打开进程失败");
+	//	return;
+	//}
 	::ShowWindow(data->game_hwnd, ::IsWindowVisible(data->game_hwnd) ? SW_HIDE : SW_SHOW);
 
 }

@@ -22,6 +22,7 @@ CMainDialog::CMainDialog(CWnd* pParent /*=nullptr*/)
 	, m_zwwcd(FALSE)
 	, m_ygbjs(FALSE)
 	, m_yxbzt(FALSE)
+	, m_HooKStatus(FALSE)
 {
 
 }
@@ -39,6 +40,7 @@ void CMainDialog::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK4, m_ygbjs);
 	DDX_Check(pDX, IDC_CHECK2, m_zwwd);
 	DDX_Check(pDX, IDC_CHECK1, m_yxbzt);
+	DDX_Check(pDX, IDC_CHECK5, m_HooKStatus);
 }
 
 
@@ -60,6 +62,7 @@ BEGIN_MESSAGE_MAP(CMainDialog, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON10, &CMainDialog::OnBnClickedButton10)
 	ON_BN_CLICKED(IDC_BUTTON11, &CMainDialog::OnBnClickedButton11)
 	ON_BN_CLICKED(IDC_BUTTON12, &CMainDialog::OnBnClickedButton12)
+	ON_BN_CLICKED(IDC_CHECK5, &CMainDialog::OnBnClickedCheck5)
 END_MESSAGE_MAP()
 
 
@@ -345,6 +348,14 @@ void   PutZombie(UINT zombieid , UINT x)
 	}
 }
 
+void AutoCallPutZombie_FUNC(UINT zid)
+{
+	for (UINT i = 0; i < 6; i++)
+	{
+		PutZombie(zid, i);
+	}
+}
+
 void CMainDialog::AutoCallPutZombie()
 {
 	for (UINT i = 0; i < 6; i++)
@@ -558,4 +569,60 @@ void CMainDialog::OnBnClickedButton12()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	m_HookMainThread.PutPlants("挂接主线程");
+}
+
+static int index = 0;
+
+void myBt_AutoCallZombie(void)
+{
+	__asm
+	{
+		pushad
+		mov eax, dword ptr ds : [esi + 0x5560]
+	}
+	// do something
+
+	index++;
+	if (index % 100 == 0)
+	{
+		AutoCallPutZombie_FUNC(24);
+	}
+	//PutZombie(24, 3);
+
+	__asm popad;
+
+	return;
+}
+
+#define BASE_HOOK_ADDR 0x489825
+
+void CMainDialog::OnBnClickedCheck5()
+{
+	// TODO: 在此添加控件通知处理程序代码 0041BAB5 00489825 
+	// 00489825 | .  8B86 60550000       mov eax, dword ptr ds : [esi + 0x5560]
+
+	UpdateData(TRUE);
+	if (m_HooKStatus)
+	{
+		DWORD jmpAddr = (DWORD)myBt_AutoCallZombie - BASE_HOOK_ADDR - 5;
+		BYTE newCode[6] = { 0xE8, 0, 0, 0, 0, 0x90 };
+		*(DWORD*)(newCode + 1) = jmpAddr;
+		DWORD oldProtect = 0;
+		VirtualProtect((LPVOID)BASE_HOOK_ADDR, 6, PAGE_EXECUTE_READWRITE, &oldProtect);
+		memcpy((PVOID)BASE_HOOK_ADDR, newCode, 6);
+		VirtualProtect((LPVOID)BASE_HOOK_ADDR, 6, oldProtect, &oldProtect);
+
+		// 00489825 | .E8 3688EB7B              call ZombieLi.myBt_AutoCallZombiekietion >
+		// 0048982A | ? 90                       nop
+		
+
+	}
+	else
+	{
+		BYTE oldCode[6] = { 0x8B, 0x86, 0x60, 0x55, 0, 0 };
+		DWORD oldProtect = 0;
+		VirtualProtect((LPVOID)BASE_HOOK_ADDR, 6, PAGE_EXECUTE_READWRITE, &oldProtect);
+		memcpy((PVOID)BASE_HOOK_ADDR, oldCode, 6);
+		VirtualProtect((LPVOID)BASE_HOOK_ADDR, 6, oldProtect, &oldProtect);
+	}
 }

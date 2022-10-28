@@ -58,4 +58,6 @@ public:
 	afx_msg void OnBnClickedButton10();
 	afx_msg void OnBnClickedButton11();
 	afx_msg void OnBnClickedButton12();
+	BOOL m_HooKStatus;
+	afx_msg void OnBnClickedCheck5();
 };
