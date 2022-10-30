@@ -171,7 +171,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonInject()
 
 	if (m_DllPath.GetLength()==0)
 	{
-		AfxMessageBox("请选择dll");
+		MessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Pid <=1)
@@ -198,7 +198,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonInject()
 	}
 
 	// 写入参数到目标进程
-	DWORD dwWriten = 0;
+	SIZE_T dwWriten = 0;
 	BOOL res = ::WriteProcessMemory(hProcess, pRemoteParam, param.GetBuffer(0),
 		param.GetLength(), &dwWriten);
 	if (!res)
@@ -265,7 +265,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonUninstall()
 
 	// 写入参数到目标进程
 	HANDLE pThread;
-	DWORD dwWriten = 0;
+	SIZE_T dwWriten = 0;
 	BOOL res = ::WriteProcessMemory(hProcess, pRemoteParam, param.GetBuffer(0),
 		param.GetLength(), &dwWriten);
 	if (!res)
