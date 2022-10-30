@@ -7,8 +7,10 @@
 #include "MFCDllInject.h"
 #include "MFCDllInjectDlg.h"
 #include "CDlgProcessList.h"
+#include "ui.h"
 #include "afxdialogex.h"
-
+#include <tlhelp32.h>
+#include <iostream>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -75,6 +77,8 @@ BEGIN_MESSAGE_MAP(CMFCDllInjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_UNINSTALL, &CMFCDllInjectDlg::OnBnClickedButtonUninstall)
 	ON_BN_CLICKED(IDC_BUTTON_OPENPROCESS, &CMFCDllInjectDlg::OnBnClickedButtonOpenprocess)
 	ON_BN_CLICKED(IDC_BUTTON_SELECT_DLL, &CMFCDllInjectDlg::OnBnClickedButtonSelectDll)
+	ON_BN_CLICKED(IDC_BUTTON_EIP_INJECT, &CMFCDllInjectDlg::OnBnClickedButtonEipInject)
+	ON_BN_CLICKED(IDC_BUTTON2, &CMFCDllInjectDlg::OnBnClickedButton2)
 END_MESSAGE_MAP()
 
 
@@ -110,6 +114,7 @@ BOOL CMFCDllInjectDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
+	PrintUI("我的程序.exe", "MYWINDOW", "color 9", 800, 100, 700, 500);
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -339,4 +344,184 @@ void CMFCDllInjectDlg::OnBnClickedButtonSelectDll()
 	}
 
 	UpdateData(FALSE);
+}
+
+
+struct ShellCodeStruct {
+	// 寄存器保护
+	BYTE push = 0x68;  // 实际上这里会进行字节对齐 
+	DWORD eip_address = 0;
+
+	BYTE pushfd = 0x9c;		
+	BYTE pushad = 0x60;
+
+	// 调用loadLibrary
+	BYTE mov_eax = 0xB8;
+	DWORD mov_eax_address = 0;// 保存LoadLibrary参数地址
+	BYTE push_eax = 0x50;
+	BYTE mov_ecx = 0xB9;
+	DWORD mov_ecx_address = 0;// 保存LoadLibrary地址
+	WORD call_ecx = 0xFFD1;
+
+	// 恢复寄存器和堆栈平衡  D1FF619DC3
+	BYTE popad = 0x61;
+	BYTE popfd = 0x9D;
+	BYTE retn = 0xC3;
+	CHAR DLLPath[MAX_PATH] = {0};
+};
+
+BYTE ShellCodeArray[MAX_PATH + 23] = { 
+	0x68,
+	0, 0, 0, 0, // 1
+	0x9c,
+	0x60,
+	0xb8,
+	0, 0, 0, 0, // 8
+	0x50,
+	0xb9,
+	0, 0, 0, 0, // 14
+	0xff, 0xd1,
+	0x61,
+	0x9d,
+	0xc3,
+};
+
+void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	if (m_DllPath.GetLength() == 0)
+	{
+		MessageBox("请选择dll");
+		return;
+	}
+	if (m_Select_Pid <= 1)
+	{
+		AfxMessageBox("请打开进程");
+		return;
+	}
+
+	/*
+		push eip
+		pushad
+		pushafd
+
+		mov eax,我们的dll_路径
+		push eax
+		call LoadLibrary
+
+		popafd
+		popad
+		retn
+
+	*/
+
+
+
+	// 创建线程快照
+	HANDLE hSnapShot = ::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+	
+	// 遍历所有线程
+	THREADENTRY32 pe32;
+	pe32.dwSize = sizeof(THREADENTRY32);
+	BOOL ret = ::Thread32First(hSnapShot, &pe32);
+	while (ret)
+	{
+		//printf("thread32 : processid: %d  threadid: %d\n", pe32.th32OwnerProcessID , pe32.th32ThreadID);
+		if (pe32.th32OwnerProcessID == m_Select_Pid)
+		{
+			break;
+		}
+		ret = ::Thread32Next(hSnapShot, &pe32);
+	}
+
+	printf("获取到的线程id为 %d \n", pe32.th32ThreadID);
+
+	//CString str;
+	//str.Format("获取到的线程id为 %d", pe32.th32ThreadID);
+	//::MessageBoxA(NULL, str, NULL, 0);
+
+	HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, false, pe32.th32ThreadID);
+	if (threadHandle == NULL)
+	{
+		::MessageBoxA(NULL, "OpenThread失败", NULL, 0);
+		return;
+	}
+
+	SuspendThread(threadHandle); // 挂起线程
+	// 分配虚拟内存 参数空间
+	
+	LPVOID pRemoteAddr = 0;
+
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Select_Pid);
+	pRemoteAddr = ::VirtualAllocEx(hProcess, NULL,sizeof(ShellCodeArray),
+		MEM_COMMIT| MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (pRemoteAddr == NULL)
+	{
+		::MessageBoxA(NULL, "VirtualAllocEx 申请空间失败", NULL, 0);
+		return;
+	}
+
+	printf("pRemoteAddr %p %d\n", pRemoteAddr, pRemoteAddr);
+
+	// 获取线程上下文
+	CONTEXT threadContext;
+	threadContext.ContextFlags = CONTEXT_FULL;
+	ret = GetThreadContext(threadHandle, &threadContext); 
+	printf("GetThreadContext %d \n", ret);
+	printf("eip_address %d %X %p \n", threadContext.Eip, threadContext.Eip, threadContext.Eip);
+
+	memcpy(ShellCodeArray + 1, &threadContext.Eip, 4);
+	// shellCode.eip_address = threadContext.Eip; // 必须写入16进制数据
+
+	threadContext.Eip = (SIZE_T)pRemoteAddr; // 改变eip地址
+	printf("new eip raw %X \n", pRemoteAddr);
+	printf("new eip %X \n", threadContext.Eip);
+
+	DWORD tmp = threadContext.Eip + 23;
+	memcpy(ShellCodeArray + 8, &tmp, 4);
+	memcpy(ShellCodeArray + 14, &((DWORD)LoadLibraryA), 4);
+	memcpy((ShellCodeArray + 23), m_DllPath.GetBuffer(), m_DllPath.GetLength() + 1);
+	
+	//printf("DLLPath %s\n", shellCode.DLLPath);
+	//printf(" %s\n", shellCode.DLLPath);
+
+	ret = WriteProcessMemory(hProcess, pRemoteAddr, ShellCodeArray, sizeof(ShellCodeStruct), NULL);
+	if (!ret)
+	{
+		::MessageBoxA(NULL, "WriteProcessMemory失败", NULL, 0);
+		return;
+	}
+	::MessageBoxA(NULL, "WriteProcessMemory", NULL, 0);
+
+	SetThreadContext(threadHandle, &threadContext);
+	ResumeThread(threadHandle);
+
+	CloseHandle(hProcess);
+	CloseHandle(threadHandle);
+
+}
+
+using namespace std;
+
+void CMFCDllInjectDlg::OnBnClickedButton2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+		// 创建线程快照
+	HANDLE hSnapShot = ::CreateToolhelp32Snapshot(TH32CS_SNAPTHREAD, 0);
+
+	// 遍历所有线程
+	THREADENTRY32 pe32;
+	pe32.dwSize = sizeof(THREADENTRY32);
+	BOOL ret = ::Thread32First(hSnapShot, &pe32);
+	while (ret)
+	{
+		if (pe32.th32OwnerProcessID == 3884)
+		{
+			printf("thread32 : processid: %d  threadid: %d \n", pe32.th32OwnerProcessID, pe32.th32ThreadID);
+
+		}
+		ret = ::Thread32Next(hSnapShot, &pe32);
+	}
 }

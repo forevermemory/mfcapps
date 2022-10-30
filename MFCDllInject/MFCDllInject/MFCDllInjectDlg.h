@@ -42,4 +42,6 @@ public:
 	CString m_DllPath;
 
 	int m_Select_Pid;
+	afx_msg void OnBnClickedButtonEipInject();
+	afx_msg void OnBnClickedButton2();
 };
