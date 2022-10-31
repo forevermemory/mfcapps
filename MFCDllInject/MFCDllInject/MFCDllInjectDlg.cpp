@@ -347,44 +347,47 @@ void CMFCDllInjectDlg::OnBnClickedButtonSelectDll()
 }
 
 
-struct ShellCodeStruct {
-	// 寄存器保护
-	BYTE push = 0x68;  // 实际上这里会进行字节对齐 
-	DWORD eip_address = 0;
+//struct ShellCodeStruct {
+//	// 寄存器保护
+//	BYTE push = 0x68;  // 实际上这里会进行字节对齐 
+//	DWORD eip_address = 0;
+//
+//	BYTE pushfd = 0x9c;		
+//	BYTE pushad = 0x60;
+//
+//	// 调用loadLibrary
+//	BYTE mov_eax = 0xB8;
+//	DWORD mov_eax_address = 0;// 保存LoadLibrary参数地址
+//	BYTE push_eax = 0x50;
+//	BYTE mov_ecx = 0xB9;
+//	DWORD mov_ecx_address = 0;// 保存LoadLibrary地址
+//	WORD call_ecx = 0xFFD1;
+//
+//	// 恢复寄存器和堆栈平衡  D1FF619DC3
+//	BYTE popad = 0x61;
+//	BYTE popfd = 0x9D;
+//	BYTE retn = 0xC3;
+//	CHAR DLLPath[MAX_PATH] = {0};
+//};
 
-	BYTE pushfd = 0x9c;		
-	BYTE pushad = 0x60;
+//BYTE ShellCodeArray[MAX_PATH + 23] = { 
+//	0x68,
+//	0, 0, 0, 0, // 1
+//	0x9c,
+//	0x60,
+//	0xb8,
+//	0, 0, 0, 0, // 8
+//	0x50,
+//	0xb9,
+//	0, 0, 0, 0, // 14
+//	0xff, 0xd1,
+//	0x61,
+//	0x9d,
+//	0xc3,
+//};
 
-	// 调用loadLibrary
-	BYTE mov_eax = 0xB8;
-	DWORD mov_eax_address = 0;// 保存LoadLibrary参数地址
-	BYTE push_eax = 0x50;
-	BYTE mov_ecx = 0xB9;
-	DWORD mov_ecx_address = 0;// 保存LoadLibrary地址
-	WORD call_ecx = 0xFFD1;
+#define shellCodeSize  32
 
-	// 恢复寄存器和堆栈平衡  D1FF619DC3
-	BYTE popad = 0x61;
-	BYTE popfd = 0x9D;
-	BYTE retn = 0xC3;
-	CHAR DLLPath[MAX_PATH] = {0};
-};
-
-BYTE ShellCodeArray[MAX_PATH + 23] = { 
-	0x68,
-	0, 0, 0, 0, // 1
-	0x9c,
-	0x60,
-	0xb8,
-	0, 0, 0, 0, // 8
-	0x50,
-	0xb9,
-	0, 0, 0, 0, // 14
-	0xff, 0xd1,
-	0x61,
-	0x9d,
-	0xc3,
-};
 
 void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 {
@@ -400,22 +403,6 @@ void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 		AfxMessageBox("请打开进程");
 		return;
 	}
-
-	/*
-		push eip
-		pushad
-		pushafd
-
-		mov eax,我们的dll_路径
-		push eax
-		call LoadLibrary
-
-		popafd
-		popad
-		retn
-
-	*/
-
 
 
 	// 创建线程快照
@@ -437,69 +424,80 @@ void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 
 	printf("获取到的线程id为 %d \n", pe32.th32ThreadID);
 
-	//CString str;
-	//str.Format("获取到的线程id为 %d", pe32.th32ThreadID);
-	//::MessageBoxA(NULL, str, NULL, 0);
 
-	HANDLE threadHandle = OpenThread(THREAD_ALL_ACCESS, false, pe32.th32ThreadID);
-	if (threadHandle == NULL)
+	HANDLE hThread = OpenThread(THREAD_ALL_ACCESS, false, pe32.th32ThreadID);
+	if (hThread == NULL)
 	{
 		::MessageBoxA(NULL, "OpenThread失败", NULL, 0);
 		return;
 	}
 
-	SuspendThread(threadHandle); // 挂起线程
-	// 分配虚拟内存 参数空间
-	
-	LPVOID pRemoteAddr = 0;
+	SuspendThread(hThread); // 挂起线程
 
+	// 获取进程句柄
 	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Select_Pid);
-	pRemoteAddr = ::VirtualAllocEx(hProcess, NULL,sizeof(ShellCodeArray),
-		MEM_COMMIT| MEM_RESERVE, PAGE_EXECUTE_READWRITE);
-	if (pRemoteAddr == NULL)
-	{
-		::MessageBoxA(NULL, "VirtualAllocEx 申请空间失败", NULL, 0);
-		return;
-	}
 
-	printf("pRemoteAddr %p %d\n", pRemoteAddr, pRemoteAddr);
 
+	//////////////////////////////////////////.
+	
 	// 获取线程上下文
 	CONTEXT threadContext;
 	threadContext.ContextFlags = CONTEXT_FULL;
-	ret = GetThreadContext(threadHandle, &threadContext); 
-	printf("GetThreadContext %d \n", ret);
-	printf("eip_address %d %X %p \n", threadContext.Eip, threadContext.Eip, threadContext.Eip);
+	ret = GetThreadContext(hThread, &threadContext);
 
-	memcpy(ShellCodeArray + 1, &threadContext.Eip, 4);
-	// shellCode.eip_address = threadContext.Eip; // 必须写入16进制数据
+	// 分配虚拟内存 
+	// 第一步 先写入参数
+	DWORD dwSize = MAX_PATH;
+	BYTE * pRemoteAddr = (BYTE*)::VirtualAllocEx(hProcess, NULL, dwSize,
+		MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+	if (pRemoteAddr==NULL)
+	{
+		::MessageBoxA(NULL, "VirtualAllocEx失败", NULL, 0);
+		return;
+	}
+	printf("pRemoteAddr: %X \n ", pRemoteAddr);
 
-	threadContext.Eip = (SIZE_T)pRemoteAddr; // 改变eip地址
-	printf("new eip raw %X \n", pRemoteAddr);
-	printf("new eip %X \n", threadContext.Eip);
+	::WriteProcessMemory(hProcess, (pRemoteAddr + shellCodeSize), m_DllPath.GetBuffer(), m_DllPath.GetLength() + 1, NULL);
 
-	DWORD tmp = threadContext.Eip + 23;
-	memcpy(ShellCodeArray + 8, &tmp, 4);
-	memcpy(ShellCodeArray + 14, &((DWORD)LoadLibraryA), 4);
-	memcpy((ShellCodeArray + 23), m_DllPath.GetBuffer(), m_DllPath.GetLength() + 1);
+	BYTE shellCode[shellCodeSize] = {
+		0x60,  // pushad
+		0x9c,  // pushfd
+		0x68,   // push
+		0, 0, 0, 0, // 3 4 5 6   
+		0xe8, // call
+		0, 0, 0, 0, // 8 9 10 11      
+		0x9d, // popfd
+		0x61,  // popad
+		0xe9, //jmp 
+		0, 0, 0 ,0  // 15 16 17 18
+	};
+	DWORD* pdwAddr = NULL;
 	
-	//printf("DLLPath %s\n", shellCode.DLLPath);
-	//printf(" %s\n", shellCode.DLLPath);
+	pdwAddr = (DWORD*)&shellCode[3]; 
+	*pdwAddr = (DWORD)(pRemoteAddr + shellCodeSize);
 
-	ret = WriteProcessMemory(hProcess, pRemoteAddr, ShellCodeArray, sizeof(ShellCodeStruct), NULL);
+	pdwAddr = (DWORD*)&shellCode[8]; //shellcode[8 9 10 11]
+	*pdwAddr = (DWORD)LoadLibraryA -(((DWORD)pRemoteAddr + 7) + 5); // 因为直接call地址了，所以对应机器码需要转换，计算VA 
+
+	pdwAddr = (DWORD*)&shellCode[15]; //shellcode[15 16 17 18]
+	*pdwAddr = threadContext.Eip - ((DWORD)(pRemoteAddr+14)+5); // 因为直接jmp地址了，所以对应机器码需要转换，计算VA
+
+	// 第二步 写入shellcode
+	ret = WriteProcessMemory(hProcess, pRemoteAddr, shellCode, sizeof(shellCode), NULL);
 	if (!ret)
 	{
 		::MessageBoxA(NULL, "WriteProcessMemory失败", NULL, 0);
 		return;
 	}
-	::MessageBoxA(NULL, "WriteProcessMemory", NULL, 0);
+	//::MessageBoxA(NULL, "WriteProcessMemory", NULL, 0);
 
-	SetThreadContext(threadHandle, &threadContext);
-	ResumeThread(threadHandle);
+	// 设定eip地址
+	threadContext.Eip = (DWORD)pRemoteAddr;
+	SetThreadContext(hThread, &threadContext);
+	ResumeThread(hThread);
 
 	CloseHandle(hProcess);
-	CloseHandle(threadHandle);
-
+	CloseHandle(hThread);
 }
 
 using namespace std;
