@@ -1,5 +1,6 @@
-LIBRARY "pedll"
+LIBRARY pedll
 EXPORTS
-add @ 1
-substract @ 3
-myprint @ 6
+	add @1
+	substract @3
+	myprint @5 NONAME 
+	myprint2 @8

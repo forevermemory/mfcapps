@@ -6,6 +6,7 @@
 #define DLL1_API _declspec(dllexport)
 #endif
 
-int add(int a, int b);
-int subtract(int a, int b);
-void myprint(int a);
+_declspec(dllexport) int __stdcall  add(int a, int b);
+_declspec(dllexport) int __stdcall substract(int a, int b);
+_declspec(dllexport) void __stdcall myprint(int a); 
+_declspec(dllexport) void __stdcall myprint2();

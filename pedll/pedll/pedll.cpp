@@ -7,12 +7,17 @@ int add(int a, int b)
 	return a + b;
 }
 
-int subtract(int a, int b)
+int substract(int a, int b)
 {
 	return a - b;
 }
 
 void myprint(int a)
+{
+
+}
+
+void myprint2(int a)
 {
 
 }
