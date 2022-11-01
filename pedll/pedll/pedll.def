@@ -1,0 +1,5 @@
+LIBRARY "pedll"
+EXPORTS
+add @ 1
+substract @ 3
+myprint @ 6
