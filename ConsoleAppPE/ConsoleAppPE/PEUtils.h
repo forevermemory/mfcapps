@@ -13,6 +13,10 @@ public:
 	BOOL LoadFile(const char* path);
 	BOOL InitPeInfo();
 	void PrintSectionHeaders();
+	void PrintDataDirectorys();
+	DWORD RvaToFoa(DWORD rva);
+	void PrintDataDirectory_0(); // 解析导出表
+	void PrintDataDirectory_1(); // 解析导入表
 
 private:
 

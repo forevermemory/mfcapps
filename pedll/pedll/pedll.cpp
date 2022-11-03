@@ -17,7 +17,7 @@ void myprint(int a)
 
 }
 
-void myprint2(int a)
+void myprint2()
 {
 
 }

@@ -9,4 +9,4 @@
 _declspec(dllexport) int __stdcall  add(int a, int b);
 _declspec(dllexport) int __stdcall substract(int a, int b);
 _declspec(dllexport) void __stdcall myprint(int a); 
-_declspec(dllexport) void __stdcall myprint2();
+extern "C" _declspec(dllexport) void __stdcall myprint2();
