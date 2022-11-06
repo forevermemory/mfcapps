@@ -1,0 +1,73 @@
+
+#include <iostream>
+#include <Windows.h>
+#include "test_hook.h"
+
+#include <stdio.h>
+#pragma warning(disable:4996)
+
+
+void PrintUI(const char* exeName, const char* uiName, const char* color, short x, short y, short UIWidth, short UIHeight)
+{
+
+    AllocConsole(); // 添加调试窗口
+    freopen("conin$", "r+t", stdin); // 将输入流设置为当前调试窗口
+    freopen("conout$", "w+t", stdout); // 将输出流设置为当前调试窗口
+    SetConsoleTitleA(uiName);  // 设置窗口标题
+    system(color);
+
+    HWND ui = GetConsoleWindow();
+    SetWindowPos(ui, 0, 0, 0, UIWidth, UIHeight, SWP_NOMOVE);
+    SetWindowPos(ui, 0, x, y, 0, 0, SWP_NOSIZE);
+    std::wcout.imbue(std::locale("CHS")); // 支持中文
+
+}
+
+
+LRESULT CALLBACK MyKeyboardProc( int    code,WPARAM wParam,LPARAM lParam)
+{
+	if (code == HC_ACTION && wParam== WM_KEYDOWN)
+	{
+		LPKBDLLHOOKSTRUCT keyInfo = (LPKBDLLHOOKSTRUCT)lParam;
+		printf("code:%d\n", keyInfo->vkCode);
+		char buf[32] = { 0 };
+		sprintf(buf, "DLL==>code: %d\n", keyInfo->vkCode);
+		OutputDebugStringA(buf);
+	}
+	return CallNextHookEx(NULL, code, wParam, lParam);
+}
+
+
+ BOOL RegisterHook()
+{
+	g_hook = SetWindowsHookExA(WH_KEYBOARD_LL, MyKeyboardProc, g_hInstance, 0);
+
+	// MSG msg;
+	//while (1)
+	//{
+	//	if (PeekMessageA(&msg, 0, 0, 0, PM_REMOVE))
+	//	{
+	//		printf("GetMessage \n");
+	//		TranslateMessage(&msg);
+	//		DispatchMessageW(&msg);
+	//	}
+	//	else
+	//		Sleep(10);    //避免CPU全负载运行
+	//}
+
+	return TRUE;
+}
+
+ BOOL UnHook()
+{
+	return UnhookWindowsHookEx(g_hook);
+}
+
+BOOL APIENTRY DllMain(HMODULE hInstance, DWORD reason, LPVOID pResverd)
+{
+	if (reason == DLL_PROCESS_ATTACH)
+	{
+		g_hInstance = hInstance;
+	}
+	return TRUE;
+}
