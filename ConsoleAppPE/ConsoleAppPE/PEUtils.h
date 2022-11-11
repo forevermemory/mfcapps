@@ -17,6 +17,8 @@ public:
 	DWORD RvaToFoa(DWORD rva);
 	void PrintDataDirectory_0(); // 解析导出表
 	void PrintDataDirectory_1(); // 解析导入表
+	void PrintDataDirectory_5(); // 解析重定位表
+	void PrintDataDirectory_9(); // 解析TLS表
 
 private:
 

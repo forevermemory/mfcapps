@@ -187,3 +187,46 @@ void PEUtils::PrintDataDirectory_1()
 	}
 
 }
+
+void PEUtils::PrintDataDirectory_5()
+{
+	// 5 是重定位表
+	IMAGE_DATA_DIRECTORY directory = pOptHeader->DataDirectory[5];
+
+	PIMAGE_BASE_RELOCATION pReloc = (PIMAGE_BASE_RELOCATION)(RvaToFoa(directory.VirtualAddress) + filebuff);
+
+	// 一直向后偏移 最后一个结构体全为0
+	while (pReloc->VirtualAddress)
+	{
+		DWORD number = (pReloc->SizeOfBlock - 8) / 2; // 前8个字节 之后每两个字节都是相关基址
+		//WORD* pRelocOffset = (WORD*)pReloc + 4; // 跳过前8个字节 ==> ++4次 下面更好理解
+		WORD* pRelocOffset = (WORD*)((DWORD)pReloc + 8); // 跳过前8个字节
+		for (size_t i = 0; i < number; i++)
+		{
+			if ((*pRelocOffset & 0x3000) == 0x3000) // 前4个字节=3的话 有效
+			{
+				// 数据为后面12个字节
+				DWORD rva = (*pRelocOffset & 0x0fff) + pReloc->VirtualAddress;
+				printf("rav=%X\n", rva);
+			}
+			pRelocOffset++;
+		}
+
+		pReloc = (PIMAGE_BASE_RELOCATION)((DWORD)pReloc + pReloc->SizeOfBlock);
+	}
+}
+
+
+void PEUtils::PrintDataDirectory_9()
+{
+	IMAGE_DATA_DIRECTORY directory = pOptHeader->DataDirectory[9];
+
+	PIMAGE_TLS_DIRECTORY pTls = (PIMAGE_TLS_DIRECTORY)(RvaToFoa(directory.VirtualAddress) + filebuff);
+
+	printf("pTls: StartAddressOfRawData %X \n", pTls->StartAddressOfRawData);
+	printf("pTls: EndAddressOfRawData %X \n", pTls->EndAddressOfRawData);
+	printf("pTls: AddressOfIndex %X \n", pTls->AddressOfIndex);
+	printf("pTls: AddressOfCallBacks %X \n", pTls->AddressOfCallBacks);
+	printf("pTls: SizeOfZeroFill %X \n", pTls->SizeOfZeroFill);
+
+}

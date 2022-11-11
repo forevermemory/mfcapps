@@ -24,7 +24,9 @@ int main()
 	util.InitPeInfo();
 	//util.PrintSectionHeaders();
 	//util.PrintDataDirectory_0();
-	util.PrintDataDirectory_1();
+	//util.PrintDataDirectory_1();
+	//util.PrintDataDirectory_5();
+	util.PrintDataDirectory_9();
 }
 
 
