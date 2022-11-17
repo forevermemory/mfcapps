@@ -385,7 +385,7 @@ void __declspec(naked) AsmBindShellCode()
 	}
 }
 
-int mainA33()
+int mainAsm333()
 {
 	printf("helloworld\n");
 	AsmBindShellCode();

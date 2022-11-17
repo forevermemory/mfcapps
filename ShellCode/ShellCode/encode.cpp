@@ -59,7 +59,7 @@ void geneNoZeroShellcode()
 	delete[] buff;
 }
 
-int main()
+int mainE333()
 {
 	//__asm
 	//{

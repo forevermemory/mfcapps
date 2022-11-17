@@ -391,6 +391,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonSelectDll()
 
 void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 {
+	/*
 	// TODO: 在此添加控件通知处理程序代码
 
 	if (m_DllPath.GetLength() == 0)
@@ -498,6 +499,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 
 	CloseHandle(hProcess);
 	CloseHandle(hThread);
+	*/
 }
 
 using namespace std;

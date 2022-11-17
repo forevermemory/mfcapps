@@ -39,5 +39,11 @@
     <ClCompile Include="encode.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="Find_JmpESP.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="Replace_Payload.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

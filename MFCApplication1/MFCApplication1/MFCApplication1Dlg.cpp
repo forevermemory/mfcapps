@@ -161,23 +161,16 @@ typedef BOOL(*RegisterHook)();
 typedef BOOL(*UnHook)();
 void CMFCApplication1Dlg::OnBnClickedButton1()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	HMODULE hModule = LoadLibraryA("D:\\pojie\\projects\\Project_TestDll\\Release\\Project_TestDll.dll");
-	RegisterHook funcAddr = (RegisterHook)::GetProcAddress(hModule, "RegisterHook");
-	funcAddr();
+
 }
 
 void CMFCApplication1Dlg::OnBnClickedButton2()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	HMODULE hModule = LoadLibraryA("D:\\pojie\\projects\\Project_TestDll\\Release\\Project_TestDll.dll");
-	UnHook funcAddr = (UnHook)::GetProcAddress(hModule, "UnHook");
-	funcAddr();
+
 }
 
 
 void CMFCApplication1Dlg::OnBnClickedButton3()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	::MessageBoxW(NULL, TEXT("raw text"), TEXT("RAW -title"), 0);
+
 }

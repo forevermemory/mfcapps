@@ -142,8 +142,10 @@
     <ClCompile Include="Bind.cpp" />
     <ClCompile Include="ComputeHash.cpp" />
     <ClCompile Include="encode.cpp" />
+    <ClCompile Include="Find_JmpESP.cpp" />
     <ClCompile Include="getAssmCode.cpp" />
     <ClCompile Include="MyStrcmp.cpp" />
+    <ClCompile Include="Replace_Payload.cpp" />
     <ClCompile Include="ShellCode.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

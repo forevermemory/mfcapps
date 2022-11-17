@@ -12,9 +12,9 @@ int  checkPassword(const char* password, int len) {
 	return result;
 }
 
-int mainS123() {
+int mainS12() {
 	int flag = 0;
-	char password[0x500] = { 0 };
+	char password[0x1000] = { 0 };
 	char buff[0x100] = { 0 };
 	FILE* fp;
 	if (NULL == (fp = fopen("password.txt", "rb"))) {
@@ -32,7 +32,7 @@ int mainS123() {
 		mov eax, eax
 		mov eax,eax
 	}
-	flag = checkPassword(password, 500);
+	flag = checkPassword(password, 0x1000);
 	if (flag) {
 		MessageBoxA(NULL, "密码错误！", "提示", MB_OK);
 	}
