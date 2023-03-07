@@ -79,6 +79,7 @@ BEGIN_MESSAGE_MAP(CMFCDllInjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_SELECT_DLL, &CMFCDllInjectDlg::OnBnClickedButtonSelectDll)
 	ON_BN_CLICKED(IDC_BUTTON_EIP_INJECT, &CMFCDllInjectDlg::OnBnClickedButtonEipInject)
 	ON_BN_CLICKED(IDC_BUTTON2, &CMFCDllInjectDlg::OnBnClickedButton2)
+	ON_BN_CLICKED(IDC_BUTTON_OPENPROCESS2, &CMFCDllInjectDlg::OnBnClickedButtonOpenprocess2)
 END_MESSAGE_MAP()
 
 
@@ -524,4 +525,11 @@ void CMFCDllInjectDlg::OnBnClickedButton2()
 		}
 		ret = ::Thread32Next(hSnapShot, &pe32);
 	}
+}
+
+
+void CMFCDllInjectDlg::OnBnClickedButtonOpenprocess2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	OutputDebugString("Message to kernel....");
 }
