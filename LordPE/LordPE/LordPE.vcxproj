@@ -183,6 +183,9 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CDialogSections.h" />
+    <ClInclude Include="CDialogSubsystem.h" />
+    <ClInclude Include="CGlobalInfo.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="LordPE.h" />
     <ClInclude Include="LordPEDlg.h" />
@@ -191,6 +194,9 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CDialogSections.cpp" />
+    <ClCompile Include="CDialogSubsystem.cpp" />
+    <ClCompile Include="CGlobalInfo.cpp" />
     <ClCompile Include="LordPE.cpp" />
     <ClCompile Include="LordPEDlg.cpp" />
     <ClCompile Include="pch.cpp">
