@@ -339,11 +339,11 @@ BOOL CDialogDirectory::OnInitDialog()
 	
 
 	ParseExport();
+	ParseImport();
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // 异常: OCX 属性页应返回 FALSE
 }
-
 
 
 BOOL CDialogDirectory::ParseExport()
@@ -434,6 +434,63 @@ BOOL CDialogDirectory::ParseExport()
 			printf("函数名称: sub_%x\n", *funcaddr);
 		}
 		funcaddr++;
+	}
+
+
+	return TRUE;
+}
+
+
+
+
+BOOL CDialogDirectory::ParseImport()
+{
+	IMAGE_DATA_DIRECTORY directory;
+
+	if (CGlobalInfo::GetInstance()->m_Arch == 64)
+	{
+		directory = CGlobalInfo::GetInstance()->m_pOptHeader64->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	}
+	else
+	{
+		directory = CGlobalInfo::GetInstance()->m_pOptHeader32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	}
+
+
+	/*
+	typedef struct _IMAGE_IMPORT_DESCRIPTOR {
+		union {
+			DWORD   Characteristics;            // 0 for terminating null import descriptor
+			DWORD   OriginalFirstThunk;         // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
+		} DUMMYUNIONNAME;
+		DWORD   TimeDateStamp;                  // 0 if not bound,
+												// -1 if bound, and real date\time stamp
+												//     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
+												// O.W. date/time stamp of DLL bound to (Old BIND)
+
+		DWORD   ForwarderChain;                 // -1 if no forwarders
+		DWORD   Name;           // RVA 指向被输入的dll的ASCII字符串
+		DWORD   FirstThunk;     //  RVA to IAT (if bound this IAT has actual addresses) 
+								//==> 包含指向输入地址表的结构的数组 IMAGE_THUNK_DATA
+	} IMAGE_IMPORT_DESCRIPTOR;
+	typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;
+
+	*/
+
+	printf("ImportTable:%X\n", directory);
+	CGlobalInfo* info = CGlobalInfo::GetInstance();
+	// 找到在文件中导出表信息的位置
+	PIMAGE_IMPORT_DESCRIPTOR pImport = (PIMAGE_IMPORT_DESCRIPTOR)
+		(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
+
+
+	while (pImport->OriginalFirstThunk)
+	{
+		char* dllName = (char *)(info->RvaToFoa(pImport->Name) + info->m_base);
+		printf("import dll文件名称为: %s,TimeDateStamp: %X \n", dllName, pImport->TimeDateStamp);
+
+		
+		pImport++;
 	}
 
 

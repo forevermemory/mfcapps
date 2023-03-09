@@ -24,6 +24,7 @@ protected:
 
 public:
 	BOOL ParseExport();
+	BOOL ParseImport();
 
 public:
 	virtual BOOL OnInitDialog();
