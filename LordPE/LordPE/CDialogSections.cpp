@@ -49,9 +49,9 @@ BOOL CDialogSections::OnInitDialog()
 	m_Sections.ModifyStyle(LVS_ICON | LVS_SMALLICON | LVS_LIST, LVS_REPORT);
 	m_Sections.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES);
 
-	m_Sections.InsertColumn(0, "名称", LVCFMT_LEFT, 60);
-	m_Sections.InsertColumn(1, "RVA", LVCFMT_LEFT, 90);
-	m_Sections.InsertColumn(2, "VSize", LVCFMT_LEFT, 90);
+	m_Sections.InsertColumn(0, "名称", LVCFMT_LEFT, 70);
+	m_Sections.InsertColumn(1, "RVA", LVCFMT_LEFT, 85);
+	m_Sections.InsertColumn(2, "VSize", LVCFMT_LEFT, 85);
 	m_Sections.InsertColumn(3, "FOA", LVCFMT_LEFT, 90);
 	m_Sections.InsertColumn(4, "FSize", LVCFMT_LEFT, 90);
 
@@ -60,8 +60,9 @@ BOOL CDialogSections::OnInitDialog()
 	{
 		int index = m_Sections.GetItemCount();
 
-	
-		m_Sections.InsertItem(index, CString(pSectionHeaders->Name));
+		char name[9] = { 0 };
+		memcpy(name, pSectionHeaders->Name, 8);
+		m_Sections.InsertItem(index, name);
 		CString str;
 		str.Format("%X", pSectionHeaders->VirtualAddress);
 		m_Sections.SetItemText(index, 1, str);
@@ -77,8 +78,7 @@ BOOL CDialogSections::OnInitDialog()
 
 		//std::string str = std::to_string(1);
 
-		char name[9] = { 0 };
-		memcpy(name, pSectionHeaders->Name, 8);
+	
 		printf("区段名称: %s\n", name);
 
 		pSectionHeaders++;

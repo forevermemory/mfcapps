@@ -42,7 +42,8 @@ public:
 	BOOL ParsePeFile();
 	void PrintUI();
 	//CString toStr(ULONGLONG d);
-  
+	DWORD RvaToFoa(DWORD rva);
+
 public:
 	PIMAGE_DOS_HEADER m_pDosHeader;
 	PIMAGE_FILE_HEADER m_pFileHeader;

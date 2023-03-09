@@ -9,6 +9,7 @@
 #include "afxdialogex.h"
 #include "CDialogSubsystem.h"
 #include "CDialogSections.h"
+#include "CDialogDirectory.h"
 #include "CGlobalInfo.h"
 
 #ifdef _DEBUG
@@ -144,17 +145,20 @@ BOOL CLordPEDlg::OnInitDialog()
 	ShowWindow(SW_MINIMIZE | SW_SHOWNA);
 
 	// Release
-	//SetWindowTextA(m_hWnd, "完美世界v1.0");
+
+
+
 	// 
 	// debug
-	//SetWindowTextA("完美世界v1.0");
+	//
 		//CButton * bt =  (CButton*)GetDlgItem(BTN_SECTIONS);
 
 
 	PrintUI();
 	
-	m_szPath2 = "D:\\win32\\加壳\\ma1.exe";
+	m_szPath2 = "D:\\win32\\加壳\\d2.dll";
 	ParsePeFile();
+
 
 	//m_Btn_Sections.m_nFlatStyle = CMFCButton::BUTTONSTYLE_NOBORDERS;
 	//m_Btn_Sections.SetFaceColor(RGB(229, 241, 251), TRUE);
@@ -263,6 +267,7 @@ void CLordPEDlg::PrintUI()
 }
 
 
+
 void CLordPEDlg::OnDropFiles(HDROP hDropInfo)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
@@ -304,6 +309,12 @@ void CLordPEDlg::OnBnClickedSelectFile()
 
 BOOL CLordPEDlg::ParsePeFile()
 {
+#ifdef DEBUG
+	SetWindowTextA("PE查看器 - " + m_szPath2);
+#else
+	SetWindowTextA(m_hWnd, "PE查看器 - " + m_szPath2);
+#endif // DEBUG
+
 	DWORD fileSize;
 
 	// read file
@@ -313,6 +324,7 @@ BOOL CLordPEDlg::ParsePeFile()
 	fp.Read(filebuff, fileSize);
 	fp.Close();
 
+	CGlobalInfo::GetInstance()->m_base = (ULONGLONG)filebuff;
 
 	printf("filepath: %s\n", m_szPath2.GetBuffer());
 	printf("fileSize: %d\n", fileSize);
@@ -380,7 +392,7 @@ BOOL CLordPEDlg::ParsePeFile()
 	////////////////////////////// x86和x64可选头结构体定义不一样
 	if (IMAGE_FILE_MACHINE_AMD64 == m_pFileHeader->Machine)
 	{
-	
+		printf("====================================x64\n");
 		// Subsystem
 		memset(buf, 0, 64);
 		sprintf(buf, "%02X", m_pOptHeader64->Subsystem);
@@ -417,9 +429,14 @@ BOOL CLordPEDlg::ParsePeFile()
 		memset(buf, 0, 64);
 		sprintf(buf, "%X", m_pOptHeader64->NumberOfRvaAndSizes);
 		m_NumberOfRvaAndSizes = buf;
+
+		CGlobalInfo::GetInstance()->m_pOptHeader64 = m_pOptHeader64;
+		CGlobalInfo::GetInstance()->m_Arch = 64;
+		
 	}
-	else 
+	else
 	{
+		printf("====================================x86\n");
 		// 32
 		// Subsystem
 		memset(buf, 0, 64);
@@ -460,6 +477,9 @@ BOOL CLordPEDlg::ParsePeFile()
 		memset(buf, 0, 64);
 		sprintf(buf, "%X", m_pOptHeader32->NumberOfRvaAndSizes);
 		m_NumberOfRvaAndSizes = buf;
+
+		CGlobalInfo::GetInstance()->m_Arch = 32;
+		CGlobalInfo::GetInstance()->m_pOptHeader32 = m_pOptHeader32;
 	}
 	
 	
@@ -493,6 +513,8 @@ void CLordPEDlg::OnBnClickedBtnSubsystemExt()
 void CLordPEDlg::OnBnClickedDirectory()
 {
 	// TODO: 在此添加控件通知处理程序代码
+	CDialogDirectory dlg;
+	dlg.DoModal();
 }
 
 

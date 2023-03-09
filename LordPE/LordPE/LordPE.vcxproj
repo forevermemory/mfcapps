@@ -183,6 +183,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CDialogDirectory.h" />
     <ClInclude Include="CDialogSections.h" />
     <ClInclude Include="CDialogSubsystem.h" />
     <ClInclude Include="CGlobalInfo.h" />
@@ -194,6 +195,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CDialogDirectory.cpp" />
     <ClCompile Include="CDialogSections.cpp" />
     <ClCompile Include="CDialogSubsystem.cpp" />
     <ClCompile Include="CGlobalInfo.cpp" />
