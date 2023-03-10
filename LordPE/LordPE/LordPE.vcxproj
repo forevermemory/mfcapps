@@ -184,6 +184,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CDialogDirectory.h" />
+    <ClInclude Include="CDialogExport.h" />
+    <ClInclude Include="CDialogImport.h" />
     <ClInclude Include="CDialogSections.h" />
     <ClInclude Include="CDialogSubsystem.h" />
     <ClInclude Include="CGlobalInfo.h" />
@@ -196,6 +198,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CDialogDirectory.cpp" />
+    <ClCompile Include="CDialogExport.cpp" />
+    <ClCompile Include="CDialogImport.cpp" />
     <ClCompile Include="CDialogSections.cpp" />
     <ClCompile Include="CDialogSubsystem.cpp" />
     <ClCompile Include="CGlobalInfo.cpp" />

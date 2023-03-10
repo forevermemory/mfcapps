@@ -251,7 +251,7 @@ void CLordPEDlg::PrintUI()
 	freopen("conin$", "r+t", stdin); // 将输入流设置为当前调试窗口
 	freopen("conout$", "w+t", stdout); // 将输出流设置为当前调试窗口
 	SetConsoleTitleA("设置窗口标题");  // 设置窗口标题
-	system("color D");
+	system("color C");
 	// 0=黑色 #000000 8=灰色 #808080
 	// 1=深蓝色 #000080 9=蓝色 #0000FF
 	// 2=绿色 #008000 A=草绿色 #00FF00

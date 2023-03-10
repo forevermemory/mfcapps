@@ -23,7 +23,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 
 public:
-	BOOL ParseExport();
+	// BOOL ParseExport();
+	BOOL ParseImport();
 
 public:
 	virtual BOOL OnInitDialog();
@@ -60,4 +61,6 @@ public:
 	CString m_COM_Size;
 	CString m_Reserved_RVA;
 	CString m_Reserved_Size;
+	afx_msg void OnBnClickedButtonExportDetail();
+	afx_msg void OnBnClickedButtonImportDetail();
 };

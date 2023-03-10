@@ -16,6 +16,8 @@
 #define IDD_DIALOG_SUBSYSTEM            130
 #define IDD_DIALOG_SECTIONS             132
 #define IDD_DIALOG_DIRECTORY            134
+#define IDD_DIALOG_DIRECTORY_EXPORT     136
+#define IDD_DIALOG_DIRECTORY_IMPORT     138
 #define IDC_EDIT1                       1000
 #define IDC_EDIT2                       1001
 #define IDC_EDIT3                       1002
@@ -59,7 +61,6 @@
 #define IDC_CHECK_SUBSYSTEM_UNKNOWN     1030
 #define IDC_EDIT_D_COM_Size             1030
 #define IDC_CHECKSUBSYSTEM_NATIVE       1031
-#define IDC_EDIT_Machine4               1031
 #define IDC_EDIT_D_Reserved_Size        1031
 #define IDC_CHECK_SUBSYSTEM_EFI_ROM     1032
 #define IDC_CHECK_SUBSYSTEM_WINDOWS_GUI 1033
@@ -84,14 +85,26 @@
 #define IDC_EDIT_D_BoundImport_RVA      1044
 #define IDC_EDIT_D_IAT_RVA              1045
 #define IDC_EDIT_D_DelayLoad_RVA        1046
+#define IDC_LIST_EXPORT                 1047
+#define IDC_EDIT_Name                   1048
+#define IDC_EDIT_Num_Name               1049
+#define IDC_EDIT_Num_FUNC               1050
+#define IDC_EDIT_FUNC_ADDR              1051
+#define IDC_EDIT_FUNC_NAME              1052
+#define IDC_EDIT_FUNC_ORD               1053
+#define IDC_BUTTON_EXPORT_DETAIL        1054
+#define IDC_BUTTON_IMPORT_DETAIL        1055
+#define IDC_LIST2                       1056
+#define IDC_LIST_DLL_ITEM               1056
+#define IDC_LIST_DLL_LIST               1057
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        136
+#define _APS_NEXT_RESOURCE_VALUE        140
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1047
+#define _APS_NEXT_CONTROL_VALUE         1057
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
