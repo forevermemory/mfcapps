@@ -14,7 +14,7 @@ private :
 	static CGlobalInfo* m_pInstance;
 
 public:
-	DWORD RvaToFoa(DWORD rva);
+	ULONGLONG RvaToFoa(ULONGLONG rva);
 
 public:
 	WORD m_CDialogSubsystemStatus = -1;
@@ -29,4 +29,3 @@ public:
 	PIMAGE_OPTIONAL_HEADER64 m_pOptHeader64;
 
 };
-

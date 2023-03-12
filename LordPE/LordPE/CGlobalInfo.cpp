@@ -24,7 +24,7 @@ CGlobalInfo* CGlobalInfo::GetInstance()
 	return m_pInstance;
 }
 
-DWORD CGlobalInfo::RvaToFoa(DWORD rva)
+ULONGLONG CGlobalInfo::RvaToFoa(ULONGLONG rva)
 {
 	PIMAGE_SECTION_HEADER pSectionHeader = IMAGE_FIRST_SECTION(m_pNtHeader);
 

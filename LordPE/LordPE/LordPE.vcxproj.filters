@@ -45,6 +45,12 @@
     <ClInclude Include="CDialogDirectory.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CDialogExport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CDialogImport.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LordPE.cpp">
@@ -66,6 +72,12 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CDialogDirectory.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDialogExport.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDialogImport.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

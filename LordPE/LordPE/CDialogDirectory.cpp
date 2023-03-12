@@ -6,6 +6,8 @@
 #include "afxdialogex.h"
 #include "CDialogDirectory.h"
 #include "CGlobalInfo.h"
+#include "CDialogExport.h"
+#include "CDialogImport.h"
 #include <string>
 
 // CDialogDirectory 对话框
@@ -93,6 +95,9 @@ void CDialogDirectory::DoDataExchange(CDataExchange* pDX)
 
 
 BEGIN_MESSAGE_MAP(CDialogDirectory, CDialogEx)
+	ON_BN_CLICKED(IDC_BUTTON_EXPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonExportDetail)
+	ON_BN_CLICKED(IDC_BUTTON_IMPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonImportDetail)
+	ON_BN_CLICKED(IDC_BUTTON_IAT, &CDialogDirectory::OnBnClickedButtonIat)
 END_MESSAGE_MAP()
 
 
@@ -338,7 +343,7 @@ BOOL CDialogDirectory::OnInitDialog()
 	}
 	
 
-	ParseExport();
+	// ParseExport();
 	ParseImport();
 	UpdateData(FALSE);
 	return TRUE;  // return TRUE unless you set the focus to a control
@@ -346,105 +351,38 @@ BOOL CDialogDirectory::OnInitDialog()
 }
 
 
-BOOL CDialogDirectory::ParseExport()
+BOOL CDialogDirectory::ParseImport()
 {
-	IMAGE_DATA_DIRECTORY directory;
+
 	
-	if (CGlobalInfo::GetInstance()->m_Arch == 64)
-	{
-		directory = CGlobalInfo::GetInstance()->m_pOptHeader64->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-	}
-	else
-	{
-		directory = CGlobalInfo::GetInstance()->m_pOptHeader32->DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
-
-	}
-
-
-	printf("exportTable:%X\n", directory);
-	CGlobalInfo * info = CGlobalInfo::GetInstance();
-	// 找到在文件中导出表信息的位置
-	PIMAGE_EXPORT_DIRECTORY pExport = (PIMAGE_EXPORT_DIRECTORY)
-		(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
-
-	printf("RVA:%X\n", directory.VirtualAddress);
-	printf("info:%X\n", info);
-	printf("pExport:%X\n", pExport);
-
-
-	/*
-	typedef struct _IMAGE_EXPORT_DIRECTORY {
-		DWORD   Characteristics;
-		DWORD   TimeDateStamp;
-		WORD    MajorVersion;
-		WORD    MinorVersion;
-		DWORD   Name;   // RVA
-		DWORD   Base;   // 导出函数起始序号
-		DWORD   NumberOfFunctions; // 导出函数数量(@max-@min+1)
-		DWORD   NumberOfNames;     // 以名称导出函数数量
-		DWORD   AddressOfFunctions;     // RVA from base of image
-		DWORD   AddressOfNames;         // RVA from base of image
-		DWORD   AddressOfNameOrdinals;  // RVA from base of image
-	} IMAGE_EXPORT_DIRECTORY, * PIMAGE_EXPORT_DIRECTORY;
-
-	*/
-
-
-	printf("AddressOfFunctions: %X\n", pExport->AddressOfFunctions);
-	printf("AddressOfNames: %X\n", pExport->AddressOfNames);
-	printf("AddressOfNameOrdinals: %X\n", pExport->AddressOfNameOrdinals);
-	printf("Base: %X\n", pExport->Base);
-	printf( "Characteristics: %X\n", pExport->Characteristics);
-	printf( "TimeDateStamp: %X\n", pExport->TimeDateStamp);
-	printf( "MajorVersion: %X\n", pExport->MajorVersion);
-	printf( "MinorVersion: %X\n", pExport->MinorVersion);
-	printf("NumberOfFunctions: %X\n", pExport->NumberOfFunctions);
-	printf("NumberOfNames: %X\n", pExport->NumberOfNames);
-	printf( "Name: %X\n", pExport->Name);
-	printf("Name: %s\n",(char *)(info->RvaToFoa(pExport->Name) + info->m_base));
-
-	// 函数地址表 DWORD
-	DWORD* funcaddr = (DWORD*)(info->RvaToFoa(pExport->AddressOfFunctions) + info->m_base);
-	// 函数名称序号表 WORD
-	WORD* peot = (WORD*)(info->RvaToFoa(pExport->AddressOfNameOrdinals) + info->m_base);
-	// 函数名称表 DWORD (RVA)
-	DWORD* pent = (DWORD*)(info->RvaToFoa(pExport->AddressOfNames) + info->m_base);
-
-	for (int i = 0; i < pExport->NumberOfFunctions; i++)
-	{
-		printf("函数地址为: %x ", *funcaddr); // RVA
-		printf("offset: %x ", info->RvaToFoa(*funcaddr)); // 距离文件开头偏移
-		// 有些导出函数是没有名称
-		BOOL existName = FALSE;
-		for (int j = 0; j < pExport->NumberOfNames; j++)
-		{
-			if (peot[j] == i)
-			{
-				char* funcName = (char*)(info->RvaToFoa(pent[j]) + info->m_base);
-				printf("函数序号: %d  ", j);
-				printf("函数名称: %s\n", funcName);
-				existName = TRUE;
-				break;
-			}
-		}
-
-		if (!existName)
-		{
-			printf("函数序号: %d  ", 0);
-			printf("函数名称: sub_%x\n", *funcaddr);
-		}
-		funcaddr++;
-	}
-
 
 	return TRUE;
 }
 
-
-
-
-BOOL CDialogDirectory::ParseImport()
+void CDialogDirectory::OnBnClickedButtonExportDetail()
 {
+	// TODO: 在此添加控件通知处理程序代码
+	CDialogExport dlg;
+	// dlg.ShowWindow(SW_SHOW);
+
+	dlg.DoModal();
+}
+
+
+void CDialogDirectory::OnBnClickedButtonImportDetail()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CDialogImport dlg;
+	// dlg.ShowWindow(SW_SHOW);
+
+	dlg.DoModal();
+
+}
+
+
+void CDialogDirectory::OnBnClickedButtonIat()
+{
+	// TODO: 在此添加控件通知处理程序代码
 	IMAGE_DATA_DIRECTORY directory;
 
 	if (CGlobalInfo::GetInstance()->m_Arch == 64)
@@ -454,45 +392,29 @@ BOOL CDialogDirectory::ParseImport()
 	else
 	{
 		directory = CGlobalInfo::GetInstance()->m_pOptHeader32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+
 	}
 
-
-	/*
-	typedef struct _IMAGE_IMPORT_DESCRIPTOR {
-		union {
-			DWORD   Characteristics;            // 0 for terminating null import descriptor
-			DWORD   OriginalFirstThunk;         // RVA to original unbound IAT (PIMAGE_THUNK_DATA)
-		} DUMMYUNIONNAME;
-		DWORD   TimeDateStamp;                  // 0 if not bound,
-												// -1 if bound, and real date\time stamp
-												//     in IMAGE_DIRECTORY_ENTRY_BOUND_IMPORT (new BIND)
-												// O.W. date/time stamp of DLL bound to (Old BIND)
-
-		DWORD   ForwarderChain;                 // -1 if no forwarders
-		DWORD   Name;           // RVA 指向被输入的dll的ASCII字符串
-		DWORD   FirstThunk;     //  RVA to IAT (if bound this IAT has actual addresses) 
-								//==> 包含指向输入地址表的结构的数组 IMAGE_THUNK_DATA
-	} IMAGE_IMPORT_DESCRIPTOR;
-	typedef IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;
-
-	*/
-
-	printf("ImportTable:%X\n", directory);
 	CGlobalInfo* info = CGlobalInfo::GetInstance();
-	// 找到在文件中导出表信息的位置
-	PIMAGE_IMPORT_DESCRIPTOR pImport = (PIMAGE_IMPORT_DESCRIPTOR)
-		(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
+	PIMAGE_IMPORT_DESCRIPTOR  pImport= (PIMAGE_IMPORT_DESCRIPTOR)(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
 
-
-	while (pImport->OriginalFirstThunk)
+	while (pImport->Characteristics)
 	{
-		char* dllName = (char *)(info->RvaToFoa(pImport->Name) + info->m_base);
-		printf("import dll文件名称为: %s,TimeDateStamp: %X \n", dllName, pImport->TimeDateStamp);
-
-		
+		if (pImport->TimeDateStamp == -1) {
+			printf( "\tdllName:【%s】:\n", (info->RvaToFoa(pImport->Name) + info->m_base));
+			
+			DWORD* addr = (DWORD*)(info->RvaToFoa(pImport->FirstThunk) + info->m_base);
+			while (*addr)
+			{
+				printf("\t\tFunction Addr:[%08X]\n",*addr);
+				addr++;
+			}
+		}
+		else if (pImport->TimeDateStamp == 0) {//等同于INT表
+			printf( "\t等同于INT表!\n");
+			break;
+		}
+	
 		pImport++;
 	}
-
-
-	return TRUE;
 }
