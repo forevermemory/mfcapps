@@ -96,6 +96,7 @@
 #define IDC_BUTTON_IMPORT_DETAIL        1055
 #define IDC_LIST2                       1056
 #define IDC_LIST_DLL_ITEM               1056
+#define IDC_BUTTON_IAT                  1056
 #define IDC_LIST_DLL_LIST               1057
 
 // Next default values for new objects
