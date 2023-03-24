@@ -62,14 +62,14 @@ void CDlgProcessList::RefreshProcessList()
 	{
 		CString tmp = pe32.szExeFile;
 
-		int index = m_Process.AddString(tmp);
-		m_Process.SetItemData(index, pe32.th32ProcessID);
+	/*	int index = m_Process.AddString(tmp);
+		m_Process.SetItemData(index, pe32.th32ProcessID);*/
 
-		//if (tmp.Compare("WXWork.exe")==0)
-		//{
-		//	int index = m_Process.AddString(tmp);
-		//	m_Process.SetItemData(index, pe32.th32ProcessID);
-		//}
+		if (tmp.Compare("fileserver2.exe") == 0)
+		{
+			int index = m_Process.AddString(tmp);
+			m_Process.SetItemData(index, pe32.th32ProcessID);
+		}
 
 
 		///////////////////////////////////////

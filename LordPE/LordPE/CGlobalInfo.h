@@ -15,6 +15,8 @@ private :
 
 public:
 	ULONGLONG RvaToFoa(ULONGLONG rva);
+	PIMAGE_SECTION_HEADER RvaFindSection(ULONGLONG rva);
+
 
 public:
 	WORD m_CDialogSubsystemStatus = -1;

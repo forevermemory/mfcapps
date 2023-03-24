@@ -8,6 +8,9 @@
 #include "CGlobalInfo.h"
 #include "CDialogExport.h"
 #include "CDialogImport.h"
+#include "CDialogIAT.h"
+#include "CDialogRelocation.h"
+
 #include <string>
 
 // CDialogDirectory 对话框
@@ -98,6 +101,7 @@ BEGIN_MESSAGE_MAP(CDialogDirectory, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_EXPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonExportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IMPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonImportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IAT, &CDialogDirectory::OnBnClickedButtonIat)
+	ON_BN_CLICKED(IDC_BUTTON_RELOCATION, &CDialogDirectory::OnBnClickedButtonRelocation)
 END_MESSAGE_MAP()
 
 
@@ -108,15 +112,12 @@ BOOL CDialogDirectory::OnInitDialog()
 {
 	CDialogEx::OnInitDialog();
 
-
-
-	// TODO:  在此添加额外的初始化
 	//IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR
 	CString str;
 
 	// 区分32位pe文件还是64位pe文件
 
-
+	
 	if (CGlobalInfo::GetInstance()->m_Arch == 32)
 	{
 		IMAGE_DATA_DIRECTORY pExport = CGlobalInfo::GetInstance()->m_pOptHeader32
@@ -353,9 +354,6 @@ BOOL CDialogDirectory::OnInitDialog()
 
 BOOL CDialogDirectory::ParseImport()
 {
-
-	
-
 	return TRUE;
 }
 
@@ -364,7 +362,6 @@ void CDialogDirectory::OnBnClickedButtonExportDetail()
 	// TODO: 在此添加控件通知处理程序代码
 	CDialogExport dlg;
 	// dlg.ShowWindow(SW_SHOW);
-
 	dlg.DoModal();
 }
 
@@ -382,39 +379,18 @@ void CDialogDirectory::OnBnClickedButtonImportDetail()
 
 void CDialogDirectory::OnBnClickedButtonIat()
 {
-	// TODO: 在此添加控件通知处理程序代码
-	IMAGE_DATA_DIRECTORY directory;
 
-	if (CGlobalInfo::GetInstance()->m_Arch == 64)
-	{
-		directory = CGlobalInfo::GetInstance()->m_pOptHeader64->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
-	}
-	else
-	{
-		directory = CGlobalInfo::GetInstance()->m_pOptHeader32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	CDialogIAT dlg;
+	dlg.DoModal();
 
-	}
+}
 
-	CGlobalInfo* info = CGlobalInfo::GetInstance();
-	PIMAGE_IMPORT_DESCRIPTOR  pImport= (PIMAGE_IMPORT_DESCRIPTOR)(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
 
-	while (pImport->Characteristics)
-	{
-		if (pImport->TimeDateStamp == -1) {
-			printf( "\tdllName:【%s】:\n", (info->RvaToFoa(pImport->Name) + info->m_base));
-			
-			DWORD* addr = (DWORD*)(info->RvaToFoa(pImport->FirstThunk) + info->m_base);
-			while (*addr)
-			{
-				printf("\t\tFunction Addr:[%08X]\n",*addr);
-				addr++;
-			}
-		}
-		else if (pImport->TimeDateStamp == 0) {//等同于INT表
-			printf( "\t等同于INT表!\n");
-			break;
-		}
+void CDialogDirectory::OnBnClickedButtonRelocation()
+{
+
 	
-		pImport++;
-	}
+	CDialogRelocation dlg;
+	dlg.DoModal();
+	
 }
