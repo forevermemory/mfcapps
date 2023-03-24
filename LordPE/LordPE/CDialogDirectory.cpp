@@ -101,7 +101,10 @@ BEGIN_MESSAGE_MAP(CDialogDirectory, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_EXPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonExportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IMPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonImportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IAT, &CDialogDirectory::OnBnClickedButtonIat)
+<<<<<<< HEAD
 	ON_BN_CLICKED(IDC_BUTTON_RELOCATION, &CDialogDirectory::OnBnClickedButtonRelocation)
+=======
+>>>>>>> 84be4c80ff21ace262badf9d5dc0904cf8aabd7f
 END_MESSAGE_MAP()
 
 
@@ -367,6 +370,7 @@ void CDialogDirectory::OnBnClickedButtonExportDetail()
 
 
 void CDialogDirectory::OnBnClickedButtonImportDetail()
+<<<<<<< HEAD
 {
 	// TODO: 在此添加控件通知处理程序代码
 	CDialogImport dlg;
@@ -393,4 +397,53 @@ void CDialogDirectory::OnBnClickedButtonRelocation()
 	CDialogRelocation dlg;
 	dlg.DoModal();
 	
+=======
+{
+	// TODO: 在此添加控件通知处理程序代码
+	CDialogImport dlg;
+	// dlg.ShowWindow(SW_SHOW);
+
+	dlg.DoModal();
+
+}
+
+
+void CDialogDirectory::OnBnClickedButtonIat()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	IMAGE_DATA_DIRECTORY directory;
+
+	if (CGlobalInfo::GetInstance()->m_Arch == 64)
+	{
+		directory = CGlobalInfo::GetInstance()->m_pOptHeader64->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+	}
+	else
+	{
+		directory = CGlobalInfo::GetInstance()->m_pOptHeader32->DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT];
+
+	}
+
+	CGlobalInfo* info = CGlobalInfo::GetInstance();
+	PIMAGE_IMPORT_DESCRIPTOR  pImport= (PIMAGE_IMPORT_DESCRIPTOR)(info->RvaToFoa(directory.VirtualAddress) + info->m_base);
+
+	while (pImport->Characteristics)
+	{
+		if (pImport->TimeDateStamp == -1) {
+			printf( "\tdllName:【%s】:\n", (info->RvaToFoa(pImport->Name) + info->m_base));
+			
+			DWORD* addr = (DWORD*)(info->RvaToFoa(pImport->FirstThunk) + info->m_base);
+			while (*addr)
+			{
+				printf("\t\tFunction Addr:[%08X]\n",*addr);
+				addr++;
+			}
+		}
+		else if (pImport->TimeDateStamp == 0) {//等同于INT表
+			printf( "\t等同于INT表!\n");
+			break;
+		}
+	
+		pImport++;
+	}
+>>>>>>> 84be4c80ff21ace262badf9d5dc0904cf8aabd7f
 }
