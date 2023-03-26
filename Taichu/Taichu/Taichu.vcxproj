@@ -45,7 +45,7 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v143</PlatformToolset>
-    <CharacterSet>Unicode</CharacterSet>
+    <CharacterSet>MultiByte</CharacterSet>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -184,6 +184,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="addr.cpp" />
     <ClCompile Include="CDialogMain.cpp" />
     <ClCompile Include="GlobalInfo.cpp" />
     <ClCompile Include="pch.cpp">
@@ -203,6 +204,7 @@
     </MASM>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="addr.h" />
     <ClInclude Include="CDialogMain.h" />
     <ClInclude Include="find.h" />
     <ClInclude Include="framework.h" />

@@ -8,6 +8,9 @@
 #include "CDialogMain.h"
 #include "GlobalInfo.h"
 #include "find.h"
+#include "addr.h"
+
+
 #pragma warning(disable:4996)
 
 // CDialogMain 对话框
@@ -68,6 +71,9 @@ IMPLEMENT_DYNAMIC(CDialogMain, CDialogEx)
 
 CDialogMain::CDialogMain(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_DIALOG_MAIN, pParent)
+   
+  
+    , m_arrBase(_T(""))
 {
 
 }
@@ -78,11 +84,15 @@ CDialogMain::~CDialogMain()
 
 void CDialogMain::DoDataExchange(CDataExchange* pDX)
 {
-	CDialogEx::DoDataExchange(pDX);
+    CDialogEx::DoDataExchange(pDX);
+
+
+    DDX_Text(pDX, IDC_EDIT_MODE_BASEADDR, m_arrBase);
 }
 
 
 BEGIN_MESSAGE_MAP(CDialogMain, CDialogEx)
+    ON_BN_CLICKED(IDC_BUTTON_CHECK_MODOLE_BASE, &CDialogMain::OnBnClickedButtonCheckModoleBase)
 END_MESSAGE_MAP()
 
 
@@ -97,6 +107,8 @@ BOOL CDialogMain::OnInitDialog()
 	GlobalInfo::GetInstance()->m_hWndDlgMain = m_hWnd;
 
 
+
+    /*
     HANDLE snapHandele = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, 0);
     if (INVALID_HANDLE_VALUE == snapHandele)
     {
@@ -126,7 +138,9 @@ BOOL CDialogMain::OnInitDialog()
         ret = Module32Next(snapHandele, &entry);
     }
     CloseHandle(snapHandele);
+    */
 
+    /*
     // HOOK 
     // 00007FFB247B1E74 | 8B45 D4   | mov eax,dword ptr ss:[rbp-2C]                     |
     //00007FFB247B1E77 | 4C:8D9C24 80000000 | lea r11, qword ptr ss : [rsp + 80] | [rsp + 80]
@@ -157,7 +171,7 @@ BOOL CDialogMain::OnInitDialog()
     };
     pFound_2 = pFound + 28;
 
-
+    CString str;
     *(ULONGLONG*)((ULONGLONG)code + 3) = (ULONGLONG)hook_recv;
     str.Format("hook_send: %llx", hook_recv);
     OutputDebugStringA(str);
@@ -168,10 +182,22 @@ BOOL CDialogMain::OnInitDialog()
     memcpy((PVOID)pFound, code, secretLength);
     VirtualProtect((LPVOID)pFound, secretLength, old, &old);
 
+   */
 
 
-    str.Format("C_VAR: %llX", C_VAR);
-    OutputDebugStringA(str);
+
 	return TRUE;  // return TRUE unless you set the focus to a control
 				  // 异常: OCX 属性页应返回 FALSE
+}
+
+
+void CDialogMain::OnBnClickedButtonCheckModoleBase()
+{
+    
+    UpdateData(TRUE);
+
+
+    FindAllObjects(0x00007FF61ABBD498);
+    //PrintStructs(BASE_ADDR_建筑物);
+    //PrintPackages(BASE_ADDR_PACKAGE);
 }

@@ -44,6 +44,7 @@ DWORD WINAPI ShowMainDlg(LPVOID pParam)
 BOOL CTaichuApp::InitInstance()
 {
 	CWinApp::InitInstance();
+	OutputDebugString("成功加载dll....");
 
 	m_Thread = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ShowMainDlg,
 		NULL, NULL, NULL);
@@ -52,12 +53,16 @@ BOOL CTaichuApp::InitInstance()
 
 int CTaichuApp::ExitInstance()
 {
+
+	OutputDebugString("正在退出dll....");
 	// 发送退出消息给对话框  SendMessage同步执行 WM_DLL_EXIT_DLG 自定义消息
 	::SendMessage(GlobalInfo::GetInstance()->m_hWndDlgMain, WM_CLOSE, 0, 0);
 	// 退出线程
 	::TerminateThread(m_Thread, 0);
 	::WaitForSingleObject(m_Thread, INFINITE);
 	// 方式2：
+	OutputDebugString("退出dll成功....");
+
 
 	return CWinApp::ExitInstance();
 }

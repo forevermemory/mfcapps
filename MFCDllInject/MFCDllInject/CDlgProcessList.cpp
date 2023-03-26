@@ -63,20 +63,22 @@ void CDlgProcessList::RefreshProcessList()
 		CString tmp = pe32.szExeFile;
 
 	/*	int index = m_Process.AddString(tmp);
-		m_Process.SetItemData(index, pe32.th32ProcessID);*/
+		m_Process.SetItemData(index, pe32.th32ProcessID);
 
 		if (tmp.Compare("fileserver2.exe") == 0)
 		{
 			int index = m_Process.AddString(tmp);
 			m_Process.SetItemData(index, pe32.th32ProcessID);
-		}
+		}*/
 
 
 		///////////////////////////////////////
-		//int index2 = m_Precsss_lists.GetItemCount();
-		//m_Precsss_lists.InsertItem(index2, tmp);
-		//m_Precsss_lists.SetItemText(index2, 1, tmp);
-		//m_Precsss_lists.SetItemData(index2, pe32.th32ProcessID);
+		int index = m_Process.AddString(tmp);
+		m_Process.SetItemData(index, pe32.th32ProcessID);
+		int index2 = m_Precsss_lists.GetItemCount();
+		m_Precsss_lists.InsertItem(index2, tmp);
+		m_Precsss_lists.SetItemText(index2, 1, tmp);
+		m_Precsss_lists.SetItemData(index2, pe32.th32ProcessID);
 
 		//LoadBitmapA()
 		//m_Process.SetItemData(index, IDI_ICON1);

@@ -316,9 +316,14 @@ void CMFCDllInjectDlg::OnBnClickedButtonUninstall()
 		goto END;
 	}
 
+	// 等待远程线程结束   
+	::WaitForSingleObject(pThread, INFINITE);
+	return;
 
 END:
 	::VirtualFreeEx(hProcess, pRemoteParam, param.GetLength(), MEM_DECOMMIT);
+	AfxMessageBox("卸载失败");
+
 }
 
 
@@ -392,6 +397,8 @@ void CMFCDllInjectDlg::OnBnClickedButtonSelectDll()
 
 void CMFCDllInjectDlg::OnBnClickedButtonEipInject()
 {
+
+	MessageBox("暂未开发");
 	/*
 	// TODO: 在此添加控件通知处理程序代码
 
@@ -532,4 +539,83 @@ void CMFCDllInjectDlg::OnBnClickedButtonOpenprocess2()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	OutputDebugString("Message to kernel....");
+
+	if (m_DllPath.GetLength() == 0)
+	{
+		AfxMessageBox("请选择dll");
+		return;
+	}
+	if (m_Select_Pid <= 1)
+	{
+		AfxMessageBox("请打开进程");
+		return;
+	}
+
+
+
+	// 分配参数空间
+	CString param(m_DllPath);
+
+
+	HANDLE hModuleSnap = INVALID_HANDLE_VALUE;
+	HANDLE hProcess = NULL;
+	HANDLE hThread = NULL;
+	// 获取模块快照   
+	hModuleSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, m_Select_Pid);
+	if (INVALID_HANDLE_VALUE == hModuleSnap)
+	{
+		return ;
+	}
+	MODULEENTRY32 me32;
+	memset(&me32, 0, sizeof(MODULEENTRY32));
+	me32.dwSize = sizeof(MODULEENTRY32);
+	// 开始遍历   
+	if (FALSE == ::Module32First(hModuleSnap, &me32))
+	{
+		::CloseHandle(hModuleSnap);
+		return ;
+	}
+	// 遍历查找指定模块   
+	bool isFound = false;
+	do
+	{
+		isFound = (0 == ::_tcsicmp(me32.szModule, m_DllPath) || 0 == ::_tcsicmp(me32.szExePath, m_DllPath));
+		if (isFound) // 找到指定模块   
+		{
+			OutputDebugString("找到指定模块....");
+			break;
+		}
+	} while (TRUE == ::Module32Next(hModuleSnap, &me32));
+
+	::CloseHandle(hModuleSnap);
+	if (false == isFound)
+	{
+		return ;
+	}
+	// 获取目标进程句柄   
+	hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Select_Pid);
+	if (NULL == hProcess)
+	{
+		AfxMessageBox("打开进程失败");
+		return;
+	}
+	// 从 Kernel32.dll 中获取 FreeLibrary 函数地址   
+	LPTHREAD_START_ROUTINE lpThreadFun = (PTHREAD_START_ROUTINE)::GetProcAddress(::GetModuleHandle(_T("Kernel32")), "FreeLibrary");
+	if (NULL == lpThreadFun)
+	{
+		::CloseHandle(hProcess);
+		return ;
+	}
+	// 创建远程线程调用 FreeLibrary   
+	hThread = ::CreateRemoteThread(hProcess, NULL, 0, lpThreadFun, me32.modBaseAddr /* 模块地址 */, 0, NULL);
+	if (NULL == hThread)
+	{
+		::CloseHandle(hProcess);
+		return ;
+	}
+	// 等待远程线程结束   
+	::WaitForSingleObject(hThread, INFINITE);
+	// 清理   
+	::CloseHandle(hThread);
+	::CloseHandle(hProcess);
 }

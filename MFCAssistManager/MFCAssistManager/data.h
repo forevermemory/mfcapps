@@ -6,4 +6,4 @@
 #define FZ_GAME_PROCESS_NAME "mfcappwmsj.exe" 
 
 
-#define FZ_DLL_PATH "C:\\Users\\Administrator\\Desktop\\wmsj\\MFCLibrary1\\Release\\MFCLibrary1.dll" 
+#define FZ_DLL_PATH "D:\\win32\\projects\\MFCAssistManager\\Release\\MFCLibrary1.dll" 
