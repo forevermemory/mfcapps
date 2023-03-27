@@ -131,16 +131,19 @@ void FindAllObjectsULONG64(ULONG64 code)
 		{
 			continue;
 		}
+
 		str.Format("==================CODE:%llX========================start", o->code);
 		OutputDebugStringA(str);
 		OutputDebugStringA(str);
 		OutputDebugStringA(str);
-		PrintRamdoms(o->arr, _size, o->code);
+		PrintRamdoms(o->arr, _size, ((o->size) >> 32) );
 		str.Format("==================CODE:%llX========================end", o->code);
 		OutputDebugStringA(str);
 		OutputDebugStringA(str);
 		OutputDebugStringA(str);
-
+		OutputDebugStringA("==");
+		OutputDebugStringA("==");
+		OutputDebugStringA("==");
 	}
 }
 
@@ -244,135 +247,11 @@ void FindAllObjects(ULONG64 num)
 	
 }
 
-void PrintStructs(ULONG64 base)
-{
-	OutputDebugStringA("执行开始.......");
-
-	// 所有物品数组首地址
-	ULONG64* goodsAddr = (ULONG64*)(base + 0x30);
-	ULONG32  goodsNumVal = *(PULONG32)(base + 0x38);
-
-	OutputDebugStringA("转换完成.......");
-	// 所有物品数组值
-	ULONG64 goodsVal = *goodsAddr;
-
-
-
-	CString str;
-	str.Format("goodsAddr:%llX, val:%llX,  numval:%x", goodsAddr, goodsVal, goodsNumVal);
-	OutputDebugString(str);
-
-
-
-	wchar_t buf[1024] = { 0 };
-
-	GoodBase* gb = NULL;
-	gb = (GoodBase*)goodsVal;
-	gb++;
-
-	str.Format("gb:%llX", gb);
-	OutputDebugString(str);
-
-	int total = 1;
-	PStructDetail detail;
-	while (total < goodsNumVal)
-	{
-
-		detail = (PStructDetail)gb->detail;
-
-		if (detail->name && detail->desc)
-		{
-			wsprintfW(buf, L"%d 编号:%d, 名称: %ls , 描述: %ls ",
-				total, gb->number, (PWCHAR)(*(ULONG64*)(detail->name)), (PWCHAR)(*(ULONG64*)(detail->desc)));
-		}
-		else
-		{
-			wsprintfW(buf, L"%d =========================================================", total);
-		}
-
-
-		OutputDebugStringW(buf);
-		memset(buf, 0, 1024);
-
-		gb++;
-		total++;
-	}
-
-	OutputDebugStringA("执行完成.......");
-}
-
-void PrintPackages(ULONG64 base)
-{
-	OutputDebugStringA("执行开始.......");
-
-	// 所有物品数组首地址
-	ULONG64* goodsAddr = (ULONG64*)(base+0x30);
-	ULONG32  goodsNumVal = *(PULONG32)(base+0x38);
-
-	OutputDebugStringA("转换完成.......");
-	// 所有物品数组值
-	ULONG64 goodsVal = *goodsAddr;
-
-
-	/*
-		[
-			{
-				编号
-				物品地址
-				未知
-			}
-		]
-	*/
-
-	CString str;
-	str.Format("goodsAddr:%llX, val:%llX,  numval:%x", goodsAddr, goodsVal, goodsNumVal);
-	OutputDebugString(str);
-
-
-
-	wchar_t buf[1024] = { 0 };
-
-	GoodBase* gb = NULL;
-	gb = (GoodBase*)goodsVal;
-	gb++;
-
-	str.Format("gb:%llX", gb);
-	OutputDebugString(str);
-
-	int total = 1;
-	PGoodDetail detail;
-	while (total< goodsNumVal)
-	{
-		
-		detail = (PGoodDetail)gb->detail;
-
-		if (detail->name && detail->desc)
-		{
-			wsprintfW(buf, L"%d 编号:%d, 名称: %ls , 描述: %ls ",
-				total, gb->number, (PWCHAR)(*(ULONG64*)(detail->name)), (PWCHAR)(*(ULONG64*)(detail->desc)));
-		}
-		else
-		{
-			wsprintfW(buf, L"%d =========================================================",total);
-		}
-
-
-		OutputDebugStringW(buf);
-		memset(buf, 0, 1024);
-
-		gb++;
-		total++;
-	}
-
-	OutputDebugStringA("执行完成.......");
-
-
-}
 
 
 // 所有物品数组首地址
 // 所有物品数组长度
-void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
+void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code2)
 {
 	
 	ULONG64* goodsAddr = (ULONG64*)arr;
@@ -415,21 +294,21 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 		PWCHAR _name = 0;
 		PWCHAR _desc = 0;
 
-		switch (code)
+		switch (code2)
 		{
-		case 0xA4947:
-			detail = (PGoodDetail_A4947_图鉴)gb->detail;
+		case 0x61:
+			detail = (PGoodDetail_0x61_图鉴)gb->detail;
 			
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 =((PGoodDetail_A4947_图鉴)detail)->name;
-			desc64 = ((PGoodDetail_A4947_图鉴)detail)->desc;
+			name64 =((PGoodDetail_0x61_图鉴)detail)->name;
+			desc64 = ((PGoodDetail_0x61_图鉴)detail)->desc;
 
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
 			}
 			else
 			{
@@ -442,7 +321,7 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			}
 			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
 			{
-				_desc = L"DESC";
+				_desc = L"-";
 			}
 			else
 			{
@@ -455,18 +334,18 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 
 			
 			break;
-		case 0xa4394:
-			detail = (PGoodDetail_A44394_禁用)gb->detail;
+		case 0xf8:
+			detail = (PGoodDetail_0xF8_抗性)gb->detail;
 		
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_A44394_禁用)detail)->name;
-			desc64 = ((PGoodDetail_A44394_禁用)detail)->desc;
+			name64 = ((PGoodDetail_0xF8_抗性)detail)->name;
+			desc64 = ((PGoodDetail_0xF8_抗性)detail)->desc;
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
 			}
 			else
 			{
@@ -479,7 +358,7 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			}
 			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
 			{
-				_desc = L"DESC";
+				_desc = L"-";
 			}
 			else
 			{
@@ -490,21 +369,20 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 				}
 			}
 			break;
-		case 0x15C50E:
-			detail = (PGoodDetail_15C50E_不变表)gb->detail;
+		case 0x44:
+			detail = (PGoodDetail_0x44_不变表)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_15C50E_不变表)detail)->name;
-			desc64 = name64;
+			name64 = ((PGoodDetail_0x44_不变表)detail)->name;
 
 			// 字符串只取到一级指针 其它的取到二级指针
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
-				_desc = L"DESC";
+				_name = L"-";
+				_desc = L"-";
 			}
 			else
 			{
@@ -513,10 +391,9 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 				{
 					_name = (PWCHAR)(name64);
 				}
-				_desc = L"DESC";
+				_desc = L"";
 
 			}
-			
 
 			break;
 		case 0x15C0AE:
@@ -549,21 +426,21 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 
 			break;
 
-		case 0x15C102:
-			detail = (PGoodDetail_15C102_建筑物)gb->detail;
+		case 0x222:
+			detail = (PGoodDetail_0x222_建筑物)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_15C102_建筑物)detail)->name;
+			name64 = ((PGoodDetail_0x222_建筑物)detail)->name;
 			desc64 = name64;
 
 			// 字符串只取到一级指针 其它的取到二级指针
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
-				_desc = L"DESC";
+				_name = L"-";
+				_desc = L"-";
 			}
 			else
 			{
@@ -572,52 +449,25 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 				{
 					_name = (PWCHAR)(name64);
 				}
-				_desc = L"DESC";
+				_desc = L"-";
 
 			}
 
 			break;
-		case 0xA4B16:
-			detail = (PGoodDetail_A4B16_描述)gb->detail;
-
-			if (detail == 0)
-			{
-				goto FAIL;
-			}
-			name64 = ((PGoodDetail_A4B16_描述)detail)->name;
-			desc64 = name64;
-
-			// 字符串只取到一级指针 其它的取到二级指针
-			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
-			{
-				_name = L"NAME";
-				_desc = L"DESC";
-			}
-			else
-			{
-				tmpName = (ULONG64*)(name64);
-				if (tmpName)
-				{
-					_name = (PWCHAR)(name64);
-				}
-				_desc = L"DESC";
-
-			}
-
-			break;
+		
 			
-		case 0x26E292:
-			detail = (PGoodDetail_26E292_建筑物)gb->detail;
+		case 0x1c6:
+			detail = (PGoodDetail_0x1c6_建筑物)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_26E292_建筑物)detail)->name;
-			desc64 = ((PGoodDetail_26E292_建筑物)detail)->desc;
+			name64 = ((PGoodDetail_0x1c6_建筑物)detail)->name;
+			desc64 = ((PGoodDetail_0x1c6_建筑物)detail)->desc;
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
 			}
 			else
 			{
@@ -630,7 +480,7 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			}
 			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
 			{
-				_desc = L"DESC";
+				_desc = L"-";
 			}
 			else
 			{
@@ -642,18 +492,43 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 				}
 			}
 			break;
-		case 0x272CA3:
-			detail = (PGoodDetail_272CA3_家具)gb->detail;
+
+		case 0x15:
+			
+			detail = (PGoodDetail_0x15_类型表)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_272CA3_家具)detail)->name;
-			_desc = L"DESC";
+			name64 = ((PGoodDetail_0x15_类型表)detail)->name;
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
+			}
+			else
+			{
+				tmpName = (ULONG64*)(name64);
+				if (tmpName && *tmpName)
+				{
+					_name = (PWCHAR)((*(ULONG64*)(name64)));
+				}
+
+			}
+			_desc = L"-";
+			break;
+
+		case 0x2aa:
+			detail = (PGoodDetail_2aa_装备2)gb->detail;
+
+			if (detail == 0)
+			{
+				goto FAIL;
+			}
+			name64 = ((PGoodDetail_2aa_装备2)detail)->name;
+			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
+			{
+				_name = L"-";
 			;
 			}
 			else
@@ -666,20 +541,33 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 
 			}
 			
+			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
+			{
+				_desc = L"-";
+			}
+			else
+			{
+				tmpDesc = (ULONG64*)(desc64);
+				if (tmpDesc)
+				{
+					_desc = (PWCHAR)(desc64); 			// 字符串只取到一级指针 其它的取到二级指针
+				}
+			}
+
 			break;
 			
-		case 0x9C31E:
-			detail = (PGoodDetail_C31E_技能)gb->detail;
+		case 0xA:
+			detail = (PGoodDetail_0xa_技能)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_C31E_技能)detail)->name;
-			desc64 = ((PGoodDetail_C31E_技能)detail)->desc;
+			name64 = ((PGoodDetail_0xa_技能)detail)->name;
+			desc64 = ((PGoodDetail_0xa_技能)detail)->desc;
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
 			}
 			else
 			{
@@ -692,7 +580,7 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			}
 			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
 			{
-				_desc = L"DESC";
+				_desc = L"-";
 			}
 			else
 			{
@@ -733,18 +621,18 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			
 			
 			break;
-		case 0xA4718:
-			detail = (PGoodDetail_A4718_背包物品)gb->detail;
+		case 0x554:
+			detail = (PGoodDetail_554_背包物品)gb->detail;
 
 			if (detail == 0)
 			{
 				goto FAIL;
 			}
-			name64 = ((PGoodDetail_A4718_背包物品)detail)->name;
-			desc64 = ((PGoodDetail_A4718_背包物品)detail)->desc;
+			name64 = ((PGoodDetail_554_背包物品)detail)->name;
+			desc64 = ((PGoodDetail_554_背包物品)detail)->desc;
 			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
 			{
-				_name = L"NAME";
+				_name = L"-";
 			}
 			else
 			{
@@ -758,7 +646,7 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 			}
 			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
 			{
-				_desc = L"DESC";
+				_desc = L"-";
 			}
 			else
 			{
@@ -769,64 +657,17 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code)
 				}
 			}
 			break;
-		case 0xA4798:
-			_name = (PWCHAR)(gb->detail);
-			_desc = L"0xA4798";
-		case 0xA4D64:
-			_name = L"A4D64";
-			_desc = L"A4D64";
-			break;
-		case 0xA4D27:
-			_name = L"A4D27";
-			_desc = L"A4D27";
-			break;
-
-		case 0xA4458:
-			_name = L"A4458";
-			_desc = L"A4458";
-			break;
-		case 0x15C1B7:
-			_name = L"15C1B7";
-			_desc = L"15C1B7";
-			break;
-		case 0xA4511:
-			_name = L"0xA4511";
-			_desc = L"0xA4511";
-			break;
-		case 0xA42E9:
-			_name = L"A42E9";
-			_desc = L"A42E9";
-			break;
-		case 0x2786E3:
-			_name = L"2786E3";
-			_desc = L"2786E3";
-			break;
-		case 0x286A71:
-			_name = L"0x286A71";
-			_desc = L"0x286A71";
-			break;
-		case 0xA4984:
-			_name = L"A4984";
-			_desc = L"A4984";
-			break;
-		case 0xA4843:
-			_name = L"A4843";
-			_desc = L"A4843";
-			break;
-		case 0x15C4C7:
-			// 应该是读取的配置文件列表
-			_name = L"15C4C7";
-			_desc = L"15C4C7";
-			break;
-			
+		
 		default:
+			_name = L"";
+			_desc = L"";
 			break;
 		}
 		
 
-		str.Format("enter: ARR=%llX  gb=%p detail=%p, name:%llX, desc:%llX",
-			arr, gb, detail, name64, desc64);
-		OutputDebugStringA(str);
+		//str.Format("enter: ARR=%llX  gb=%p detail=%p, name:%llX, desc:%llX",
+		//	arr, gb, detail, name64, desc64);
+		//OutputDebugStringA(str);
 
 		wsprintfW(buf, L"%d 编号:%X, 名称: %ls , 描述: %ls ",
 			total, gb->number, _name, _desc);

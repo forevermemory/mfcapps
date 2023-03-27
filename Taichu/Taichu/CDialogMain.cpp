@@ -197,7 +197,12 @@ void CDialogMain::OnBnClickedButtonCheckModoleBase()
     UpdateData(TRUE);
 
 
-    FindAllObjects(0x00007FF61ABBD498);
+    FindAllObjects(0x00007FF6B12ACF80);
+    //0x00007FF61ABBD498   8 FBC5 2B68
+    //0x00007fff16810000
+
+    //0x00007FF6B12ACF80
+    //0x00007FF6ACCE0000
     //PrintStructs(BASE_ADDR_建筑物);
     //PrintPackages(BASE_ADDR_PACKAGE);
 }
