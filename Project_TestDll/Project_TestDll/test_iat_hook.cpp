@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <stdio.h>
 
 #pragma warning(disable:4996)
 
@@ -23,8 +24,88 @@ int WINAPI MyMessageBoxW( HWND hWnd,LPCWSTR lpText, LPCWSTR lpCaption, UINT uTyp
 	return 1;
 }
 
+
+
+
 BOOL InstallHook()
 {
+	BYTE code[13] = {0};
+	int codeLength = 12;
+	// 找特征码
+	BYTE* dataBuffer = NULL;
+	BOOL readReturn = 0;
+
+	// 获取 PageSize 和地址粒度
+	SYSTEM_INFO sysInfo = { 0 };
+	GetSystemInfo(&sysInfo);
+	char* p = (char*)sysInfo.lpMinimumApplicationAddress;
+	MEMORY_BASIC_INFORMATION  memInfo = { 0 };
+
+	char buf[1024] = { 0 };
+
+	while (p < sysInfo.lpMaximumApplicationAddress) {
+		size_t size = VirtualQuery(
+			p,										// 要查询内存块的基地址指针
+			&memInfo,								// 接收内存块信息的 MEMORY_BASIC_INFORMATION 对象
+			sizeof(MEMORY_BASIC_INFORMATION)		// 缓冲区大小
+		);
+		if (size != sizeof(MEMORY_BASIC_INFORMATION)) { break; }
+
+		if (memInfo.Type == MEM_PRIVATE && !(memInfo.Protect & PAGE_NOACCESS))
+		{
+			//str.Format("find addr: %p, length:%x", p, memInfo.RegionSize);
+			//OutputDebugStringA(str);
+
+			//// 查找 memInfo.RegionSize
+			dataBuffer = (BYTE*)malloc(memInfo.RegionSize);
+			memset(dataBuffer, 0, memInfo.RegionSize);
+
+			//DWORD old;
+			//VirtualProtect((LPVOID)p, memInfo.RegionSize, PAGE_EXECUTE_READWRITE, &old);
+			SIZE_T rd;
+			ReadProcessMemory(GetCurrentProcess(), p, dataBuffer, memInfo.RegionSize, &rd);
+			//VirtualProtect((LPVOID)p, memInfo.RegionSize, old, &old);
+
+			size_t length = memInfo.RegionSize;
+			//str.Format("find addr: %p, length:%x, rd:%X", p, length, rd);
+			//OutputDebugStringA(str);
+
+
+			for (int i = 0; i < length; i++)
+			{
+				BOOLEAN found = TRUE;
+				for (int j = 0; j < codeLength; j++)
+				{
+					if (code[j] != dataBuffer[i + j])
+					{
+						found = FALSE;
+						break;
+					}
+
+				}
+
+				if (found)
+				{
+					// 地址为
+					DWORD addr = (DWORD)(p)+i;
+					sprintf(buf, "find addr: %X", addr);
+					OutputDebugStringA(buf);
+					break;
+					
+				}
+			}
+
+			free(dataBuffer);
+		}
+
+		p += memInfo.RegionSize;
+	}
+
+	OutputDebugStringA("find finished");
+
+
+
+
 	DWORD old = 0;
 	VirtualProtect((DWORD *)g_hookAddr, 5, PAGE_EXECUTE_READWRITE, &old);
 	memcpy((DWORD*)g_hookAddr, newCode, 5);
@@ -33,14 +114,6 @@ BOOL InstallHook()
 }
 
 
-BOOL UnHook()
-{
-	DWORD old = 0;
-	VirtualProtect((DWORD*)g_hookAddr, 5, PAGE_EXECUTE_READWRITE, &old);
-	memcpy((DWORD*)g_hookAddr, oldCode, 5);
-	VirtualProtect((DWORD*)g_hookAddr, 5, old, &old);
-	return TRUE;
-}
 
 BOOL APIENTRY DllMain(HMODULE hInstance, DWORD reason, LPVOID pResverd)
 {
@@ -49,24 +122,11 @@ BOOL APIENTRY DllMain(HMODULE hInstance, DWORD reason, LPVOID pResverd)
 		g_hInstance = hInstance;
 		OutputDebugStringA("AAA==>DLL_PROCESS_ATTACH");
 
-		// 也可以直接写 MessageBoxW , 但是有些debug版本函数是jmp xxx
-		HMODULE hModule = GetModuleHandleA("user32.dll");
-		g_hookAddr = (DWORD)GetProcAddress(hModule, "MessageBoxW");
-		// ps: 如果是汇编中某个函数 地址则例如 0x00439345
-
-		// 保存原函数前5个字节
-		memcpy(oldCode, (char*)g_hookAddr, 5);
-
-		// 计算偏移
-		DWORD offset = (DWORD)MyMessageBoxW - g_hookAddr -5;
-		memcpy(&newCode[1], &offset, 4);
-
 		InstallHook();
 	}
 	else if (reason == DLL_PROCESS_DETACH)
 	{
 		OutputDebugStringA("AAA==>DLL_PROCESS_DETACH");
-		UnHook();
 	}
 	return TRUE;
 }
