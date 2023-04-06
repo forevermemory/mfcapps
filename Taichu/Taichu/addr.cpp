@@ -1,11 +1,9 @@
 #include "pch.h"
 #include "addr.h"
-#include <afxstr.h>
-#include <vector>
 
-
-
-
+std::map<CStringW, PGoodDetail_554_背包物品> g_AllGoods;
+std::vector<PPackageGood> g_Packages;
+HANDLE h_Thread = 0;
 
 DWORD WINAPI FindAllObjectsThread(LPVOID pParam)
 {
@@ -133,17 +131,16 @@ void FindAllObjectsULONG64(ULONG64 code)
 		}
 
 		str.Format("==================CODE:%llX========================start", o->code);
-		OutputDebugStringA(str);
-		OutputDebugStringA(str);
-		OutputDebugStringA(str);
-		PrintRamdoms(o->arr, _size, ((o->size) >> 32) );
+		//OutputDebugStringA(str);
+		//OutputDebugStringA(str);
+		//OutputDebugStringA(str);
+		// PrintRamdoms(o->arr, _size, ((o->size) >> 32));
+		PrintRamdoms_背包(o->arr, _size, ((o->size) >> 32) );
+		
 		str.Format("==================CODE:%llX========================end", o->code);
-		OutputDebugStringA(str);
-		OutputDebugStringA(str);
-		OutputDebugStringA(str);
-		OutputDebugStringA("==");
-		OutputDebugStringA("==");
-		OutputDebugStringA("==");
+		//OutputDebugStringA(str);
+		//OutputDebugStringA(str);
+		//OutputDebugStringA(str);
 	}
 }
 
@@ -242,7 +239,7 @@ void FindAllObjects(ULONG64 num)
 	data->length = 8;
 
 
-	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FindAllObjectsThread,
+	h_Thread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)FindAllObjectsThread,
 		(LPVOID)data, NULL, NULL);
 	
 }
@@ -684,4 +681,291 @@ void PrintRamdoms(ULONG64 arr, ULONG64 size, ULONG64 code2)
 	}
 
 	OutputDebugStringA("执行完成.......");
+}
+
+
+
+
+
+
+
+
+// 所有物品数组首地址
+// 所有物品数组长度
+void PrintRamdoms_背包(ULONG64 arr, ULONG64 size, ULONG64 code2)
+{
+
+	ULONG64* goodsAddr = (ULONG64*)arr;
+	CString str;
+	str.Format("arr=%llX goodsAddr:%llX ", arr, goodsAddr);
+	OutputDebugStringA(str);
+
+
+	wchar_t buf[1024] = { 0 };
+
+	GoodBase* gb = NULL;
+	gb = (GoodBase*)goodsAddr;
+	//gb++;
+
+	int total = 1;
+
+	PVOID detail = NULL;
+	ULONG64 name64 = 0;
+	ULONG64 desc64 = 0;
+	ULONG64 id64 = 0;
+
+	
+	str.Format("gb=%p", gb);
+	OutputDebugStringA(str);
+
+	while (total < size)
+	{
+		if ((ULONG64)gb < 0xffffffff || (ULONG64)gb > 0x3ffffffffff)
+		{
+			goto FAIL;
+		}
+		if ((ULONG64)gb->detail < 0xffffffff || (ULONG64)gb->detail > 0x3ffffffffff)
+		{
+			goto FAIL;
+		}
+
+		ULONG64* tmpName = 0;
+		ULONG64* tmpDesc = 0;
+		ULONG64* tmpID = 0;
+		PWCHAR _name = 0;
+		PWCHAR _desc = 0;
+		PWCHAR _id = 0;
+
+		switch (code2)
+		{
+		
+		case 0xf8:
+			detail = (PGoodDetail_0xF8_抗性)gb->detail;
+
+			if (detail == 0)
+			{
+				goto FAIL;
+			}
+			name64 = ((PGoodDetail_0xF8_抗性)detail)->name;
+			desc64 = ((PGoodDetail_0xF8_抗性)detail)->desc;
+			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
+			{
+				_name = L"-";
+			}
+			else
+			{
+				tmpName = (ULONG64*)(name64);
+				if (tmpName && *tmpName)
+				{
+					_name = (PWCHAR)((*(ULONG64*)(name64)));
+				}
+
+			}
+			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
+			{
+				_desc = L"-";
+			}
+			else
+			{
+				tmpDesc = (ULONG64*)(desc64);
+				if (tmpDesc && *tmpDesc)
+				{
+					_desc = (PWCHAR)((*(ULONG64*)(desc64)));
+				}
+			}
+			_id = L"-";
+			break;
+		
+
+		case 0x2aa:
+			detail = (PGoodDetail_2aa_装备2)gb->detail;
+
+			if (detail == 0)
+			{
+				goto FAIL;
+			}
+			name64 = ((PGoodDetail_2aa_装备2)detail)->name;
+			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
+			{
+				_name = L"-";
+				;
+			}
+			else
+			{
+				tmpName = (ULONG64*)(name64);
+				if (tmpName && *tmpName)
+				{
+					_name = (PWCHAR)((*(ULONG64*)(name64)));
+				}
+
+			}
+
+			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
+			{
+				_desc = L"-";
+			}
+			else
+			{
+				tmpDesc = (ULONG64*)(desc64);
+				if (tmpDesc)
+				{
+					_desc = (PWCHAR)(desc64); 			// 字符串只取到一级指针 其它的取到二级指针
+				}
+			}
+			_id = L"-";
+			break;
+
+		case 0xA:
+			detail = (PGoodDetail_0xa_技能)gb->detail;
+
+			if (detail == 0)
+			{
+				goto FAIL;
+			}
+			name64 = ((PGoodDetail_0xa_技能)detail)->name;
+			desc64 = ((PGoodDetail_0xa_技能)detail)->desc;
+			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
+			{
+				_name = L"-";
+			}
+			else
+			{
+
+				if (tmpName && *tmpName)
+				{
+					_name = (PWCHAR)((*(ULONG64*)(name64)));
+				}
+				tmpDesc = (ULONG64*)(desc64);
+			}
+			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
+			{
+				_desc = L"-";
+			}
+			else
+			{
+				tmpName = (ULONG64*)(name64);
+				if (tmpDesc && *tmpDesc)
+				{
+					_desc = (PWCHAR)((*(ULONG64*)(desc64)));
+				}
+			}
+			_id = L"-";
+			break;
+
+		
+		case 0x554:
+			detail = (PGoodDetail_554_背包物品)gb->detail;
+
+			if (detail == 0)
+			{
+				goto FAIL;
+			}
+			id64 = ((PGoodDetail_554_背包物品)detail)->id;
+			name64 = ((PGoodDetail_554_背包物品)detail)->name;
+			desc64 = ((PGoodDetail_554_背包物品)detail)->desc;
+			if (name64 < 0xffffffffff || name64 > 0x3ffffffffff)
+			{
+				_name = L"-";
+			}
+			else
+			{
+				tmpName = (ULONG64*)(name64);
+				if (tmpName && *tmpName)
+				{
+
+					_name = (PWCHAR)((*(ULONG64*)(name64)));
+				}
+
+			}
+			if (desc64 < 0xffffffffff || desc64 > 0x3ffffffffff)
+			{
+				_desc = L"-";
+			}
+			else
+			{
+				tmpDesc = (ULONG64*)(desc64);
+				if (tmpDesc && *tmpDesc)
+				{
+					_desc = (PWCHAR)((*(ULONG64*)(desc64)));
+				}
+			}
+			// id
+			if (id64 < 0xffffffffff || id64 > 0x3ffffffffff)
+			{
+				_id = L"-";
+			}
+			else
+			{
+				tmpID = (ULONG64*)(id64);
+				if (tmpID)
+				{
+					_id = (PWCHAR)(id64);
+				}
+			}
+
+			g_AllGoods[CStringW(_id)] = (PGoodDetail_554_背包物品)detail;
+			
+			break;
+
+		default:
+			goto FAIL;
+			_name = L"-";
+			_desc = L"-";
+			break;
+		}
+
+
+		//str.Format("enter: ARR=%llX  gb=%p detail=%p, name:%llX, desc:%llX",
+		//	arr, gb, detail, name64, desc64);
+		//OutputDebugStringA(str);
+
+		//wsprintfW(buf, L"序号:%d,编号1:%X, 物品编码:%ls, 名称: %ls, 描述: %ls",
+		//	total, gb->number,_id, _name, _desc);
+		//OutputDebugStringW(buf);
+
+	FAIL:
+
+		memset(buf, 0, 1024);
+		gb++;
+		total++;
+		name64 = 0;
+		desc64 = 0;
+
+	}
+
+	//OutputDebugStringA("执行完成.......");
+}
+
+
+void PrintAllGoods()
+{
+
+	OutputDebugStringA("xxxxxxxxxxxxxxxSTART WAITINGxxxxxxxxxxxxxxxxxxx");
+
+	WaitForSingleObject(h_Thread, INFINITE);
+
+	CStringW str;
+	str.Format(L"g_AllGoods total len: %lld", g_AllGoods.size());
+	OutputDebugStringW(str);
+
+
+
+	CStringW _name;
+	for (std::map<CStringW, PGoodDetail_554_背包物品>::iterator it = g_AllGoods.begin(); it != g_AllGoods.end(); it++)
+	{
+		if (it->second->name < 0xffffffffff || it->second->name > 0x3ffffffffff)
+		{
+			_name = L"-";
+		}
+		else
+		{
+			_name = (PWCHAR)((*(ULONG64*)(it->second->name)));
+		}
+
+		//str.Format(L"名称: %ls\t, %ls", it->first, _name);
+		//OutputDebugStringW(str);
+	}
+
+
+	OutputDebugStringA("xxxxxxxxxxxxxxxENDxxxxxxxxxxxxxxxxxxx");
 }

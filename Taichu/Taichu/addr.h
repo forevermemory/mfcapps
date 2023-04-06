@@ -1,4 +1,7 @@
+#include "pch.h"
 #include <Windows.h>
+#include <afxstr.h>
+
 
 
 #define BASE_ADDR_建筑物 0x00000287B0B76580
@@ -7,6 +10,14 @@
 #define USER_ADDRESS_START 0x400000
 #define USER_ADDRESS_END 0x00007fffffffffff
 #define USER_ADDRESS_LEN ( (USER_ADDRESS_END - USER_ADDRESS_START) / 8)
+
+
+#include <vector>
+#include <map>
+#include <string>
+
+
+
 
 
 typedef struct BigObject {
@@ -31,6 +42,7 @@ typedef  struct GoodBase {
 	ULONG64 detail;
 	ULONG64 reserved;
 } GoodBase, _GoodBase, * PGoodBase;
+
 
 
 typedef  struct GoodDetail_0x61_图鉴 {
@@ -200,7 +212,7 @@ typedef  struct GoodDetail_0xa_技能 {
 
 typedef  struct GoodDetail_554_背包物品 {
 	ULONG64 reversed;
-	ULONG64 toBrief;
+	ULONG64 id; // UCHAR * 以\0结尾
 	ULONG64 r3;
 	ULONG64  name;
 	ULONG64  r5;
@@ -227,11 +239,25 @@ typedef  struct CodeThread {
 	ULONG64  length;
 } CodeThread, * PCodeThread;
 
+typedef  struct PackageGood {
+
+	ULONG64 index;
+	ULONG64 number;
+	PGoodDetail_554_背包物品 p;
+} PackageGood, _PackageGood, * PPackageGood;
+
 void PrintPackages(ULONG64 base);
 void PrintStructs(ULONG64 base);
 void PrintRamdoms(ULONG64 arr, ULONG64 siz, ULONG64 code);
+void PrintRamdoms_背包(ULONG64 arr, ULONG64 size, ULONG64 code2);
+void PrintAllGoods();
+
+
 
 void FindAllObjects(ULONG64 exp);
 void FindAllObjectsULONG64(ULONG64 exp);
 
 void FindAllObjectsWithCharCode(PUCHAR code, ULONG64 length);
+
+
+
