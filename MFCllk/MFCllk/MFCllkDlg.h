@@ -43,27 +43,52 @@ public:
 	afx_msg void OnBnClickedButton5();
 	afx_msg void OnBnClickedButton6();
 	afx_msg void OnBnClickedButton7();
-	afx_msg void OnBnClickedButton8();
+	void InitGameData();
+	afx_msg void cwllk();
+	
 	afx_msg void OnBnClickedButton9();
 	CString m_Data;
-	afx_msg void OnBnClickedButton10();
+	afx_msg void OnBnClickedButtonxian0();
 
 public:
 	DWORD m_gamedata[18][14] = { 0 };
 	DWORD m_gamedata2[22][14] = { 0 };
 	PEle m_gamedataPtr[22][14] = { 0 };
 	BOOL m_Time;
+	BOOL m_Life;
+	
 	afx_msg void OnClickedCheck1();
 	BOOL m_Tishi;
 	afx_msg void OnClickedCheck2();
 
 	void resetVisited();
-	PEle FindOne(PEle cur);
-	afx_msg void OnBnClickedButton11();
+	afx_msg void OnBnClickedButtonxian1();
 
 
 	void SendClick(short x, short y, DWORD mode);
+	void SendClickMode2(PEle a, PEle b, DWORD mode);
+	DWORD GetGameLevel();
 
 	DWORD m_Total1 = 0;
 	DWORD m_Total2 = 0;
+	DWORD m_Total3 = 0;
+	afx_msg void OnBnClickedButtonzhexian2();
+
+	void UpdateText();
+	
+	// 查找一折
+	PEle FindOneTop(PEle cur, PEle pos);
+	PEle FindOneDown(PEle cur, PEle pos);
+	PEle FindOneLeft(PEle cur, PEle pos);
+	PEle FindOneRight(PEle cur, PEle pos);
+
+	// 查找二折
+	PEle FindTwoTopLeftRight(PEle cur, PEle pos);
+	PEle FindTwoDownLeftRight(PEle cur, PEle pos);
+
+	PEle FindTwoLeftTopDown(PEle cur, PEle pos);
+	PEle FindTwoRightTopDown(PEle cur, PEle pos);
+
+	afx_msg void OnBnClickedButtonzhexian3();
+	afx_msg void OnBnClickedCheck3();
 };

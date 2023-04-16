@@ -20,6 +20,9 @@
 #define IDC_CHECK2                      1012
 #define IDC_BUTTON11                    1013
 #define IDC_BUTTON12                    1014
+#define IDC_BUTTON_zhexian2             1014
+#define IDC_BUTTON_zhexian3             1015
+#define IDC_CHECK3                      1016
 
 // Next default values for new objects
 // 

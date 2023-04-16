@@ -13,6 +13,7 @@ IMPLEMENT_DYNAMIC(CDialogMain, CDialogEx)
 
 CDialogMain::CDialogMain(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCLLK_DIALOG, pParent)
+	, m_Life(FALSE)
 {
 
 }
@@ -24,10 +25,12 @@ CDialogMain::~CDialogMain()
 void CDialogMain::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Check(pDX, IDC_CHECK3, m_Life);
 }
 
 
 BEGIN_MESSAGE_MAP(CDialogMain, CDialogEx)
+	
 END_MESSAGE_MAP()
 
 
