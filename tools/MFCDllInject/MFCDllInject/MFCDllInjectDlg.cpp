@@ -21,7 +21,7 @@
 #define new DEBUG_NEW
 #endif
 
-//#define MY_DEBUG 0
+//#define MY_DEBUG 1
 // 用于应用程序“关于”菜单项的 CAboutDlg 对话框
 
 class CAboutDlg : public CDialogEx
@@ -57,32 +57,6 @@ END_MESSAGE_MAP()
 
 // CMFCDllInjectDlg 对话框
 
-
-void PrintMemCpuInfo()
-{
-
-
-	//SYSTEM_INFO si;
-	//GetSystemInfo(&si);
-
-	//OSVERSIONINFO osvi;//定义OSVERSIONINFO数据结构对象
-	//memset(&osvi, 0, sizeof(OSVERSIONINFO));//开空间 
-	//osvi.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);//定义大小 
-	//GetVersionEx(&osvi);//获得版本信息 
-
-
-	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	if (hSnap)
-	{
-		PROCESSENTRY32 entry = { sizeof entry };
-		for (BOOL bState = Process32First(hSnap, &entry); bState; bState = Process32Next(hSnap, &entry))
-		{
-			printf("%d \t %s\n", entry.th32ProcessID, entry.szExeFile);
-			
-		}
-		CloseHandle(hSnap);
-	}
-}
 
 CMFCDllInjectDlg::CMFCDllInjectDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCDLLINJECT_DIALOG, pParent)
@@ -160,10 +134,14 @@ BOOL CMFCDllInjectDlg::OnInitDialog()
 	m_Process_List.InsertColumn(1, "ARCH", LVCFMT_LEFT, 50);
 	m_Process_List.InsertColumn(2, "进程名称", LVCFMT_LEFT, 184);
 
+#ifdef MY_DEBUG
 	AllocConsole(); // 添加调试窗口
 	freopen("conin$", "r+t", stdin); // 将输入流设置为当前调试窗口
 	freopen("conout$", "w+t", stdout); // 将输出流设置为当前调试窗口
 	SetConsoleTitleA("调试窗口");
+#endif // MY_DEBUG
+
+
 
 	m_LoadLibraryA_Addr = 0;
 	GetProcessList();
@@ -317,13 +295,9 @@ void CMFCDllInjectDlg::GetProcessList()
 	//	
 	//}
 
-	CString old;
-	GetWindowTextA(old);
-
 	CString ns;
-	ns.Format("%s, 总计: %d个进程",old,process.size());
+	ns.Format("dll注入器, 总计: %d个进程",process.size());
 	SetWindowTextA(ns);
-
 
 }
 
