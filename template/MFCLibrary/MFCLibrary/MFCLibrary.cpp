@@ -8,6 +8,8 @@
 #include "GlobalInfo.h"
 
 
+#include <stdio.h>
+#pragma warning(disable:4996)
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -56,30 +58,35 @@ CMFCLibraryApp::CMFCLibraryApp()
 // 唯一的 CMFCLibraryApp 对象
 
 CMFCLibraryApp theApp;
-
+HANDLE g_Thread = 0;
 
 // CMFCLibraryApp 初始化
 
 // CZombieLibApp 初始化
 
+
 DWORD WINAPI ShowMainDlg(LPVOID pParam)
 {
+
+	OutputDebugStringA("========CMFCLibraryApp CreateThread ShowMainDlg");
+
 	AFX_MANAGE_STATE(AfxGetStaticModuleState());
 	CMainDialog m_Dlg;
 	m_Dlg.DoModal();
-
 	return 0;
 }
 
 
+
+
 BOOL CMFCLibraryApp::InitInstance()
 {
+
+	OutputDebugStringA("========CMFCLibraryApp InitInstance");
+
 	CWinApp::InitInstance();
-
-	m_Thread = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ShowMainDlg,
+	g_Thread = ::CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)ShowMainDlg,
 		NULL, NULL, NULL);
-
-
 
 	return TRUE;
 }
@@ -91,9 +98,14 @@ int CMFCLibraryApp::ExitInstance()
 	// 发送退出消息给对话框
 	::SendMessage(GlobalInfo::GetInstance()->m_hWndDlgMain, WM_CLOSE, 0, 0);
 
-	// 退出线程
-	::TerminateThread(m_Thread, 0);
-	::WaitForSingleObject(m_Thread, INFINITE);
+	if (g_Thread)
+	{
+		// 退出线程
+		::TerminateThread(g_Thread, 0);
+		::WaitForSingleObject(g_Thread, INFINITE);
+
+	}
+
 
 	return CWinApp::ExitInstance();
 }

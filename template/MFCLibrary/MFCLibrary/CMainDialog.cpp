@@ -39,8 +39,9 @@ END_MESSAGE_MAP()
 void CMainDialog::OnBnClickedButtonTestMsgbox()
 {
 	// TODO: 在此添加控件通知处理程序代码
-	MessageBoxA("helloworld", 0, 1);
+	//MessageBoxA("helloworld", 0, 1);
 }
+
 
 
 BOOL CMainDialog::OnInitDialog()

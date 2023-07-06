@@ -27,11 +27,11 @@
     <ClCompile Include="GlobalInfo.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="dllmodul.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="MFCLibrary.def">
-      <Filter>源文件</Filter>
-    </None>
     <None Include="res\MFCLibrary.rc2">
       <Filter>资源文件</Filter>
     </None>

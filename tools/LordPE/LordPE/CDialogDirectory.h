@@ -64,8 +64,5 @@ public:
 	afx_msg void OnBnClickedButtonExportDetail();
 	afx_msg void OnBnClickedButtonImportDetail();
 	afx_msg void OnBnClickedButtonIat();
-<<<<<<< HEAD
 	afx_msg void OnBnClickedButtonRelocation();
-=======
->>>>>>> 84be4c80ff21ace262badf9d5dc0904cf8aabd7f
 };

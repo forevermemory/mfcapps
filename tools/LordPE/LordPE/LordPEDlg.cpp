@@ -154,10 +154,10 @@ BOOL CLordPEDlg::OnInitDialog()
 		//CButton * bt =  (CButton*)GetDlgItem(BTN_SECTIONS);
 
 
-	PrintUI();
+	//PrintUI();
 	
-	m_szPath2 = "D:\\win32\\加壳\\d2.dll";
-	ParsePeFile();
+	//m_szPath2 = "C:\\Windows\\System32\\ntdll.dll";
+	//ParsePeFile();
 
 
 	//m_Btn_Sections.m_nFlatStyle = CMFCButton::BUTTONSTYLE_NOBORDERS;
