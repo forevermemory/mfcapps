@@ -48,8 +48,18 @@ public:
 public:
 	CString m_DllPath;
 
+#ifdef _WIN64
 	ULONG64 m_LoadLibraryA_Addr;
 	ULONG64 m_LoadLibraryW_Addr;
+	ULONG64 m_FreeLibrary_Addr;
+#else
+	UINT32 m_LoadLibraryA_Addr;
+	UINT32 m_LoadLibraryW_Addr;
+	UINT32 m_FreeLibrary_Addr;
+
+	
+#endif // _WIN64
+
 	
 	int m_Select_Pid;
 	PPROCESS_INFO m_Select_Process;
@@ -65,6 +75,7 @@ public:
 	afx_msg void OnBnClickedButtonHijack();
 	afx_msg void OnBnClickedButtonHook();
 	afx_msg void OnBnClickedButtonReflect();
+	afx_msg void OnBnClickedButtonDuanPeb();
 };
 
 

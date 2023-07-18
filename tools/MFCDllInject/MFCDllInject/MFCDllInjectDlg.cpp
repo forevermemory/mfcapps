@@ -17,6 +17,9 @@
 #include <map>
 #include <psapi.h>
 
+#include <winnt.h>
+#include <winternl.h>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -60,7 +63,16 @@ END_MESSAGE_MAP()
 
 CMFCDllInjectDlg::CMFCDllInjectDlg(CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_MFCDLLINJECT_DIALOG, pParent)
+
+#ifdef MY_DEBUG
+	
+	, m_DllPath(_T("C:\\Users\\Administrator\\Desktop\\1\\MFCLibrary-x64.dll"))
+
+#else
 	, m_DllPath(_T(""))
+#endif // MY_DEBUG
+
+
 	, m_Select_Pid(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
@@ -91,6 +103,7 @@ BEGIN_MESSAGE_MAP(CMFCDllInjectDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_HIJACK, &CMFCDllInjectDlg::OnBnClickedButtonHijack)
 	ON_BN_CLICKED(IDC_BUTTON_HOOK, &CMFCDllInjectDlg::OnBnClickedButtonHook)
 	ON_BN_CLICKED(IDC_BUTTON_REFLECT, &CMFCDllInjectDlg::OnBnClickedButtonReflect)
+	ON_BN_CLICKED(IDC_BUTTON_DUAN_PEB, &CMFCDllInjectDlg::OnBnClickedButtonDuanPeb)
 END_MESSAGE_MAP()
 
 
@@ -232,15 +245,21 @@ void CMFCDllInjectDlg::GetProcessList()
 	{
 		CString tmp = pe32.szExeFile;
 	#ifdef MY_DEBUG
-			if (0 == _stricmp(tmp, "notepad.exe"))
+		if (0 == _stricmp(tmp, "notepad.exe"))
 		{
-			process[pe32.szExeFile] = pe32.th32ProcessID;
+			process[pe32.th32ProcessID] = pe32.szExeFile;
+
 		}
+		if (0 == _stricmp(tmp, "notepad32.exe"))
+		{
+			process[pe32.th32ProcessID] = pe32.szExeFile;
+
+	}
 	#else
 			process[pe32.th32ProcessID] = pe32.szExeFile;
 	#endif // MY_DEBUG
 
-
+			//process[pe32.th32ProcessID] = pe32.szExeFile;
 		ret = ::Process32Next(hSnapShot, &pe32);
 	}
 
@@ -384,50 +403,48 @@ void CMFCDllInjectDlg::OnClickListProcessList(NMHDR* pNMHDR, LRESULT* pResult)
 	m_Select_Process = info;
 	UpdateData(FALSE);
 
-	ULONG64 funcAddr = 0;
-	ULONG64 funcAddrW = 0;
+
 
 	// 获取LoadLibrary
-	BOOL isWow32;
+	BOOL isWow64;
 	HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Select_Pid);
-	IsWow64Process(hProcess, &isWow32);
+	IsWow64Process(hProcess, &isWow64);
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+
+	m_LoadLibraryA_Addr = (ULONG64)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
+	m_LoadLibraryW_Addr = (ULONG64)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryW");
+	m_FreeLibrary_Addr = (ULONG64)GetProcAddress(GetModuleHandleA("kernel32.dll"), "FreeLibrary");
+
+	printf("找到LoadLibraryA地址: %llX\n", m_LoadLibraryA_Addr);
+	printf("找到LoadLibraryW地址: %llX\n", m_LoadLibraryW_Addr);
+	printf("找到FreeLibrary地址:  %llX\n", m_FreeLibrary_Addr);
+
+#else
+	if (!isWow64)
+	{
+		AfxMessageBox("请选择32位进程");
+		return;
+	}
+	m_LoadLibraryA_Addr = (UINT32)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryA");
+	m_LoadLibraryW_Addr = (UINT32)GetProcAddress(GetModuleHandleA("kernel32.dll"), "LoadLibraryW");
+	m_FreeLibrary_Addr = (UINT32)GetProcAddress(GetModuleHandleA("kernel32.dll"), "FreeLibrary");
+
+	printf("找到LoadLibraryA地址: %X\n", m_LoadLibraryA_Addr);
+	printf("找到LoadLibraryW地址: %X\n", m_LoadLibraryW_Addr);
+	printf("找到FreeLibrary地址:  %X\n", m_FreeLibrary_Addr);
+
+#endif // _WIN64
+
 	CloseHandle(hProcess);
-	// 返回true为32位进程
-	if (isWow32)
-	{
-		BOOL ret = GetProcessDllFunctionsByNameX32(m_Select_Pid, "kernel32.dll", "LoadLibraryA", &funcAddr);
-		if (!ret)
-		{
-			printf("32 没有找到函数\n");
-			return;
-		}
-		ret = GetProcessDllFunctionsByNameX32(m_Select_Pid, "kernel32.dll", "LoadLibraryW", &funcAddrW);
-		if (!ret)
-		{
-			printf("32 没有找到函数\n");
-		}
-	}
-	else
-	{
-		BOOL ret = GetProcessDllFunctionsByNameX64(m_Select_Pid, "kernel32.dll", "LoadLibraryA", &funcAddr);
-		if (!ret)
-		{
-			printf("64 没有找到函数\n");
-			return;
-		}
-		ret = GetProcessDllFunctionsByNameX64(m_Select_Pid, "kernel32.dll", "LoadLibraryW", &funcAddrW);
-		if (!ret)
-		{
-			printf("32 没有找到函数\n");
-		}
-	}
 
 
 
-	printf("找到LoadLibraryA地址: %llp\n", funcAddr);
-	printf("找到LoadLibraryW地址: %llp\n", funcAddrW);
-	m_LoadLibraryA_Addr = funcAddr;
-	m_LoadLibraryW_Addr = funcAddrW;
+
 }
 
 
@@ -467,156 +484,144 @@ void CMFCDllInjectDlg::OnBnClickedButtonUninstall()
 	BOOL isWow64;
 	IsWow64Process(hProcess, &isWow64); // 返回true为32位进程
 	printf("isWow64 %d \n", isWow64);
-	if (isWow64)
+
+
+
+	MODULEENTRY32 me32 = { 0 };
+	// 分配参数空间
+	CString param(m_DllPath);
+	HANDLE hModuleSnap = INVALID_HANDLE_VALUE;
+
+	HANDLE hThread = NULL;
+	// 获取模块快照
+	hModuleSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, m_Select_Pid);
+	if (INVALID_HANDLE_VALUE == hModuleSnap)
 	{
-		// 32位
-		BOOL ret;
-		DWORD cbNeeded = 0;
-		HMODULE lphModule[1024] = { 0 };
-		MODULEINFO modinfo = { 0 };
-		EnumProcessModulesEx(hProcess, lphModule, sizeof(lphModule), &cbNeeded, LIST_MODULES_ALL);
+		AfxMessageBox("CreateToolhelp32Snapshot   ");
+		goto EXIT;
+	}
 
-		for (size_t i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+	me32.dwSize = sizeof(MODULEENTRY32);
+
+	// 开始遍历   
+	if (FALSE == ::Module32First(hModuleSnap, &me32))
+	{
+		::CloseHandle(hModuleSnap);
+		AfxMessageBox("Module32First");
+		goto EXIT;
+	}
+	// 遍历查找指定模块   
+	bool isFound = false;
+	do
+	{
+		isFound = (0 == ::_tcsicmp(me32.szModule, m_DllPath) || 0 == ::_tcsicmp(me32.szExePath, m_DllPath));
+		if (isFound) // 找到指定模块   
 		{
-			char szModName[MAX_PATH] = { 0 };
-			// Get the full path to the module's file.
-			ret = GetModuleFileNameExA(hProcess, lphModule[i], szModName, sizeof(szModName) / sizeof(char));
-			//ret = GetModuleBaseNameA(hProcess, lphModule[i], szModName, sizeof(szModName) / sizeof(char));
-			if (!ret)
-			{
-				printf("GetModuleFileNameExA err %d\n", GetLastError());
-				continue;
-			}
-
-			//printf("===========szModName:%s\n", szModName);
-			// not match 
-			if (0 != _stricmp(szModName, m_DllPath))
-			{
-				// printf("not match: %s %s\n", m_DllPath, szModName);
-				continue;
-			}
-
-			/////////// success match target dll
-			// GetModuleInformation 
-			ret = GetModuleInformation(hProcess, lphModule[i], &modinfo, sizeof(MODULEINFO));
-			if (ret == 0)
-			{
-				printf("GetModuleInformation err : %d\n", GetLastError());
-				goto EXIT ;
-			}
-
+			printf("找到指定模块....\n");
 			break;
 		}
+	} while (TRUE == ::Module32Next(hModuleSnap, &me32));
 
-		printf("============start uninstall\n");
-		ULONG64 funcAddr = 0;
-		 ret = GetProcessDllFunctionsByNameX32(m_Select_Pid, "kernel32.dll", "FreeLibrary", &funcAddr);
-		if (!ret)
-		{
-			AfxMessageBox("没有找到函数FreeLibrary");
-			goto EXIT;
-		}
-		
-			// 创建远程线程调用 FreeLibrary   
-		HANDLE	hThread = CreateRemoteThread(hProcess, NULL, 0, (PTHREAD_START_ROUTINE)funcAddr,
-			modinfo.lpBaseOfDll, 0, NULL);
-		printf("=======CreateRemoteThread==hThread %X=====, hThread\n", hThread);
-
-		if (NULL == hThread)
-		{
-			printf("=======CreateRemoteThread==fail %d=====, hThread\n", GetLastError());
-
-			::CloseHandle(hProcess);
-			goto EXIT;
-		}
-		printf("=======CreateRemoteThread=======\n");
-
-		// 等待远程线程结束   
-		::WaitForSingleObject(hThread, INFINITE);
-		// 清理   
-		::CloseHandle(hThread);
-		printf("=======WaitForSingleObject=======\n");
-	}
-	else {
-		// 分配参数空间
-		CString param(m_DllPath);
-		HANDLE hModuleSnap = INVALID_HANDLE_VALUE;
-
-		HANDLE hThread = NULL;
-		// 获取模块快照
-		hModuleSnap = ::CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, m_Select_Pid);
-		if (INVALID_HANDLE_VALUE == hModuleSnap)
-		{
-			AfxMessageBox("CreateToolhelp32Snapshot   ");
-			goto EXIT;
-		}
-		MODULEENTRY32 me32 = { 0 };
-		me32.dwSize = sizeof(MODULEENTRY32);
-
-		// 开始遍历   
-		if (FALSE == ::Module32First(hModuleSnap, &me32))
-		{
-			::CloseHandle(hModuleSnap);
-			AfxMessageBox("Module32First   ");
-			goto EXIT;
-		}
-		// 遍历查找指定模块   
-		bool isFound = false;
-		do
-		{
-			isFound = (0 == ::_tcsicmp(me32.szModule, m_DllPath) || 0 == ::_tcsicmp(me32.szExePath, m_DllPath));
-			if (isFound) // 找到指定模块   
-			{
-				printf("找到指定模块....\n");
-				break;
-			}
-		} while (TRUE == ::Module32Next(hModuleSnap, &me32));
-
-		::CloseHandle(hModuleSnap);
-		if (false == isFound)
-		{
-			AfxMessageBox("没有找到指定模块   ");
-			goto EXIT;
-		}
-
-		// 从 Kernel32.dll 中获取 FreeLibrary 函数地址   
-		//LPTHREAD_START_ROUTINE lpThreadFun = (PTHREAD_START_ROUTINE)::GetProcAddress(
-		//	::GetModuleHandle(_T("Kernel32")), "FreeLibrary");
-
-		ULONG64 funcAddr = 0;
-		BOOL ret = GetProcessDllFunctionsByNameX64(m_Select_Pid, "kernel32.dll", "FreeLibrary", &funcAddr);
-		if (!ret)
-		{
-			AfxMessageBox("没有找到函数FreeLibrary");
-			goto EXIT;
-		}
-		printf("FreeLibrary addr :%llX \n", funcAddr);
-		printf("FreeLibrary addr :%s \n", me32.szModule);
-		printf("FreeLibrary addr :%s \n", me32.szExePath);
-		
-		// 创建远程线程调用 FreeLibrary   
-		hThread = ::CreateRemoteThread(hProcess, NULL, 0, (PTHREAD_START_ROUTINE)funcAddr,
-			me32.hModule, 0, NULL);
-		printf("=======CreateRemoteThread==hThread %X=====, hThread\n", hThread);
-
-		if (NULL == hThread)
-		{
-			printf("=======CreateRemoteThread==fail %d=====, hThread\n",GetLastError() );
-
-			::CloseHandle(hProcess);
-			goto EXIT;
-		}
-		printf("=======CreateRemoteThread=======\n");
-
-		// 等待远程线程结束   
-		::WaitForSingleObject(hThread, INFINITE);
-		// 清理   
-		::CloseHandle(hThread);
-		printf("=======WaitForSingleObject=======\n");
+	::CloseHandle(hModuleSnap);
+	if (false == isFound)
+	{
+		AfxMessageBox("没有找到指定模块");
+		goto EXIT;
 	}
 
+	// 创建远程线程调用 FreeLibrary   
+	hThread = ::CreateRemoteThread(hProcess, NULL, 0, (PTHREAD_START_ROUTINE)m_FreeLibrary_Addr,
+		me32.hModule, 0, NULL);
+	printf("=======CreateRemoteThread==hThread %X=====, hThread\n", hThread);
 
-	EXIT:
+	if (NULL == hThread)
+	{
+		printf("=======CreateRemoteThread==fail %d=====, hThread\n", GetLastError());
+		goto EXIT;
+	}
+	printf("=======CreateRemoteThread=======\n");
+
+	// 等待远程线程结束   
+	WaitForSingleObject(hThread, 3000);
+	// 清理   
+	CloseHandle(hThread);
+	printf("=======WaitForSingleObject=======\n");
+
+
+	//if (isWow64)
+	//{
+	//	// 32位
+	//	BOOL ret;
+	//	DWORD cbNeeded = 0;
+	//	HMODULE lphModule[1024] = { 0 };
+	//	MODULEINFO modinfo = { 0 };
+	//	EnumProcessModulesEx(hProcess, lphModule, sizeof(lphModule), &cbNeeded, LIST_MODULES_ALL);
+
+	//	for (size_t i = 0; i < (cbNeeded / sizeof(HMODULE)); i++)
+	//	{
+	//		char szModName[MAX_PATH] = { 0 };
+	//		// Get the full path to the module's file.
+	//		ret = GetModuleFileNameExA(hProcess, lphModule[i], szModName, sizeof(szModName) / sizeof(char));
+	//		//ret = GetModuleBaseNameA(hProcess, lphModule[i], szModName, sizeof(szModName) / sizeof(char));
+	//		if (!ret)
+	//		{
+	//			printf("GetModuleFileNameExA err %d\n", GetLastError());
+	//			continue;
+	//		}
+
+	//		//printf("===========szModName:%s\n", szModName);
+	//		// not match 
+	//		if (0 != _stricmp(szModName, m_DllPath))
+	//		{
+	//			// printf("not match: %s %s\n", m_DllPath, szModName);
+	//			continue;
+	//		}
+
+	//		/////////// success match target dll
+	//		// GetModuleInformation 
+	//		ret = GetModuleInformation(hProcess, lphModule[i], &modinfo, sizeof(MODULEINFO));
+	//		if (ret == 0)
+	//		{
+	//			printf("GetModuleInformation err : %d\n", GetLastError());
+	//			goto EXIT ;
+	//		}
+
+	//		break;
+	//	}
+
+	//	printf("============start uninstall\n");
+	//	ULONG64 funcAddr = 0;
+	//	 ret = GetProcessDllFunctionsByNameX32(m_Select_Pid, "kernel32.dll", "FreeLibrary", &funcAddr);
+	//	if (!ret)
+	//	{
+	//		AfxMessageBox("没有找到函数FreeLibrary");
+	//		goto EXIT;
+	//	}
+	//	
+	//		// 创建远程线程调用 FreeLibrary   
+	//	HANDLE	hThread = CreateRemoteThread(hProcess, NULL, 0, (PTHREAD_START_ROUTINE)funcAddr,
+	//		modinfo.lpBaseOfDll, 0, NULL);
+	//	printf("=======CreateRemoteThread==hThread %X=====, hThread\n", hThread);
+
+	//	if (NULL == hThread)
+	//	{
+	//		printf("=======CreateRemoteThread==fail %d=====, hThread\n", GetLastError());
+
+	//		::CloseHandle(hProcess);
+	//		goto EXIT;
+	//	}
+	//	printf("=======CreateRemoteThread=======\n");
+
+	//	// 等待远程线程结束   
+	//	WaitForSingleObject(hThread, 3000);
+	//	// 清理   
+	//	CloseHandle(hThread);
+	//	printf("=======WaitForSingleObject=======\n");
+	//}
+
+
+
+EXIT:
 	CloseHandle(hProcess);
 
 }
@@ -628,7 +633,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonRemoteThread()
 
 	if (m_DllPath.GetLength() == 0)
 	{
-		MessageBox("请选择dll");
+		AfxMessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Process == NULL)
@@ -650,7 +655,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonRemoteThread()
 
 	// 分配参数空间
 	CString param(m_DllPath);
-	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, param.GetLength() + 1,
+	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, 0x1000,
 		MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	if (pRemoteParam == NULL)
 	{
@@ -696,9 +701,11 @@ void CMFCDllInjectDlg::OnBnClickedButtonRemoteThread()
 
 	// waitfor 
 	WaitForSingleObject(pThread, INFINITE);
+	CloseHandle(pThread);
 
 END:
-	::VirtualFreeEx(hProcess, pRemoteParam, param.GetLength(), MEM_DECOMMIT);
+	VirtualFreeEx(hProcess, pRemoteParam, 0x1000, MEM_DECOMMIT);
+	CloseHandle(hProcess);
 }
 
 
@@ -707,7 +714,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonRtlcreateuserthread()
 {
 	if (m_DllPath.GetLength() == 0)
 	{
-		MessageBox("请选择dll");
+		AfxMessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Process == NULL)
@@ -728,9 +735,26 @@ void CMFCDllInjectDlg::OnBnClickedButtonRtlcreateuserthread()
 
 	printf("isWow64 %d \n", isWow64);
 
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+#else
+	if (!isWow64)
+	{
+		AfxMessageBox("请选择32位进程");
+		return;
+	}
+#endif // _WIN64
+
+	AfxMessageBox("暂未确定x64该函数的参数类型");
+	return;
+
 	// 分配参数空间
 	CString param(m_DllPath);
-	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, param.GetLength() + 1,
+	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, 0x1000,
 		MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	if (pRemoteParam == NULL)
 	{
@@ -748,27 +772,33 @@ void CMFCDllInjectDlg::OnBnClickedButtonRtlcreateuserthread()
 		goto END;
 	}
 
+	HANDLE pThread = NULL;
 	ULONG64 funcAddr = 0;
-	BOOL isFind = GetProcessDllFunctionsByNameX64(GetCurrentProcessId(), "ntdll.dll", "RtlCreateUserThread", &funcAddr);
-	if (FALSE == isFind)
+	ULONG64 ret = 0;
+#ifdef _WIN64
+
+	pRtlCreateUserThread64 func_RtlCreateUserThread = (pRtlCreateUserThread64)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "RtlCreateUserThread");
+	if (0 == func_RtlCreateUserThread)
 	{
 		AfxMessageBox("获取RtlCreateUserThread地址失败");
 		goto END;
 	}
+	ret = func_RtlCreateUserThread(hProcess, NULL, FALSE,  0,0,0);
+#else
 
-	P_RtlCreateUserThread func_RtlCreateUserThread = (P_RtlCreateUserThread)funcAddr;
-	HANDLE pThread = NULL;
+	pRtlCreateUserThread32 func_RtlCreateUserThread = (pRtlCreateUserThread32)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "RtlCreateUserThread");
+	if (0 == func_RtlCreateUserThread)
+	{
+		AfxMessageBox("获取RtlCreateUserThread地址失败");
+		goto END;
+	}
+	ret = func_RtlCreateUserThread(hProcess, NULL, FALSE, 0, 0, 0, (PTHREAD_START_ROUTINE)(DWORD)m_LoadLibraryA_Addr,
+		pRemoteParam, &pThread, NULL);
+#endif // _WIN64
 
-	if (isWow64)
-	{
-		func_RtlCreateUserThread(hProcess, NULL, FALSE, 0, 0, 0, (PTHREAD_START_ROUTINE)(DWORD)m_LoadLibraryA_Addr,
-			pRemoteParam, &pThread);
-	}
-	else
-	{
-		func_RtlCreateUserThread(hProcess, NULL, FALSE, 0, 0, 0, (PTHREAD_START_ROUTINE)m_LoadLibraryA_Addr,
-			pRemoteParam, &pThread);
-	}
+
 
 
 	if (pThread == NULL)
@@ -777,17 +807,25 @@ void CMFCDllInjectDlg::OnBnClickedButtonRtlcreateuserthread()
 		goto END;
 	}
 	// waitfor 
-	WaitForSingleObject(pThread, INFINITE);
+	//WaitForSingleObject(pThread, INFINITE);
+	//printf("VirtualFreeEx\n");
+	//CloseHandle(pThread);
 
 END:
-	::VirtualFreeEx(hProcess, pRemoteParam, param.GetLength(), MEM_DECOMMIT);
+	printf("END\n");
+
+	VirtualFreeEx(hProcess, pRemoteParam, 0x1000, MEM_DECOMMIT);
+	printf("VirtualFreeEx\n");
+	CloseHandle(hProcess);
+	printf("CloseHandle\n");
+	printf("执行完毕\n");
 }
 
 void CMFCDllInjectDlg::OnBnClickedButtonNtcreatethreadex()
 {
 	if (m_DllPath.GetLength() == 0)
 	{
-		MessageBox("请选择dll");
+		AfxMessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Process == NULL)
@@ -806,11 +844,23 @@ void CMFCDllInjectDlg::OnBnClickedButtonNtcreatethreadex()
 	BOOL isWow64;
 	IsWow64Process(hProcess, &isWow64); // 返回true为32位进程
 	printf("isWow64 %d \n", isWow64);
-
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+#else
+	if (!isWow64)
+	{
+		AfxMessageBox("请选择32位进程");
+		return;
+	}
+#endif // _WIN64
 
 	// 分配参数空间
 	CString param(m_DllPath);
-	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, param.GetLength() + 1,
+	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, 0x1000,
 		MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
 	if (pRemoteParam == NULL)
 	{
@@ -832,25 +882,20 @@ void CMFCDllInjectDlg::OnBnClickedButtonNtcreatethreadex()
 	BOOL isFind;
 	HANDLE pThread = NULL;
 
-	P_NtCreateThreadEx64 func_NtCreateThreadEx;
-	isFind = GetProcessDllFunctionsByNameX64(GetCurrentProcessId(), "ntdll.dll", "NtCreateThreadEx", &funcAddr);
-	if (FALSE == isFind)
-	{
-		AfxMessageBox("获取NtCreateThreadEx地址失败");
-		goto END;
-	}
-	func_NtCreateThreadEx = (P_NtCreateThreadEx64)funcAddr;
+#ifdef _WIN64
 
-	if (isWow64)
-	{
-		func_NtCreateThreadEx(&pThread, THREAD_ALL_ACCESS, NULL, hProcess, (PVOID)(DWORD)m_LoadLibraryA_Addr,
-			pRemoteParam, 0, 0, 0, 0, NULL);
-	}
-	else
-	{
-		func_NtCreateThreadEx(&pThread, THREAD_ALL_ACCESS, NULL, hProcess, (PVOID)m_LoadLibraryA_Addr,
-			pRemoteParam, 0, 0, 0, 0, NULL);
-	}
+	P_NtCreateThreadEx64 func_NtCreateThreadEx = (P_NtCreateThreadEx64)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "NtCreateThreadEx");
+	func_NtCreateThreadEx(&pThread, THREAD_ALL_ACCESS, NULL, hProcess, (PVOID)m_LoadLibraryA_Addr,
+		pRemoteParam, 0, 0, 0, 0, NULL);
+#else
+
+	P_NtCreateThreadEx32 func_NtCreateThreadEx = (P_NtCreateThreadEx32)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "NtCreateThreadEx");
+	func_NtCreateThreadEx(&pThread, THREAD_ALL_ACCESS, NULL, hProcess, (LPTHREAD_START_ROUTINE)(DWORD)m_LoadLibraryA_Addr,
+		pRemoteParam, FALSE, 0, 0, 0, NULL);
+#endif // _WIN64
+
 
 	if (pThread == NULL)
 	{
@@ -862,7 +907,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonNtcreatethreadex()
 	CloseHandle(pThread);
 END:
 
-	::VirtualFreeEx(hProcess, pRemoteParam, param.GetLength(), MEM_DECOMMIT);
+	VirtualFreeEx(hProcess, pRemoteParam, 0x1000, MEM_DECOMMIT);
 	CloseHandle(hProcess);
 }
 
@@ -871,7 +916,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonApc()
 {
 	if (m_DllPath.GetLength() == 0)
 	{
-		MessageBox("请选择dll");
+		AfxMessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Process == NULL)
@@ -948,6 +993,9 @@ void CMFCDllInjectDlg::OnBnClickedButtonApc()
 		ret = Thread32Next(hSnapshot, &pe32);
 	}
 
+	CloseHandle(hSnapshot);
+	CloseHandle(hProcess);
+
 	printf("=============end=========\n");
 }
 
@@ -956,7 +1004,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 {
 	if (m_DllPath.GetLength() == 0)
 	{
-		MessageBox("请选择dll");
+		AfxMessageBox("请选择dll");
 		return;
 	}
 	if (m_Select_Process == NULL)
@@ -976,7 +1024,21 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 	IsWow64Process(hProcess, &isWow64); // 返回true为32位进程
 	printf("isWow64 %d \n", isWow64);
 
-
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+#else
+	if (!isWow64)
+	{
+		AfxMessageBox("请选择32位进程");
+		return;
+	}
+#endif // _WIN64
+	CONTEXT context = { 0 };
+	WOW64_CONTEXT context32 = { 0 };
 	// 分配参数空间
 	CString param(m_DllPath);
 	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, 0x1000,
@@ -984,6 +1046,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 	if (pRemoteParam == NULL)
 	{
 		AfxMessageBox("分配参数空间失败");
+		CloseHandle(hProcess);
 		return;
 	}
 
@@ -994,7 +1057,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 	if (!res)
 	{
 		AfxMessageBox("写入参数到目标进程失败");
-		return;
+		goto END;
 	}
 
 	// 遍历目标进程的所有线程-找到主线程
@@ -1005,7 +1068,7 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 	if (INVALID_HANDLE_VALUE == hSnapshot)
 	{
 		AfxMessageBox("CreateToolhelp32Snapshot目标进程失败");
-		return;
+		goto END;
 	}
 
 	DWORD mainThreadID = 0;
@@ -1025,88 +1088,96 @@ void CMFCDllInjectDlg::OnBnClickedButtonHijack()
 
 	//挂起主线程
 	HANDLE tHandle = OpenThread(THREAD_ALL_ACCESS, FALSE, mainThreadID);
+	if (NULL == tHandle)
+	{
+		AfxMessageBox("打开线程失败");
+		CloseHandle(hProcess);
+		return;
+	}
+
 	SuspendThread(tHandle);
 
-
-	//构建shellcode
-	if (isWow64)
+#ifdef _WIN64
+	//获取这个线程的Context
+	
+	context.ContextFlags = CONTEXT_ALL;
+	ret = GetThreadContext(tHandle, &context);
+	if (!ret)
 	{
-		WOW64_CONTEXT context = { 0 };
-		context.ContextFlags = CONTEXT_ALL;
-		Wow64GetThreadContext(tHandle, &context);
-		char buff[] =
-		{
-			0x60,                          // pushad             
-			0xB8, 0x78, 0x56, 0x34, 0x12,  // mov eax,12345678  // LoadlibraryA地址   
-			0x68, 0x78, 0x56, 0x34, 0x12,  // push 12345678     // 参数地址
-			0xFF, 0xD0,                    // call eax
-			0x61,                          // popad
-			0xE9, 0, 0, 0, 0,              // jmp xxxxxxxx
-		};
-		*(PDWORD)&buff[2] = (DWORD)m_LoadLibraryA_Addr;
-		*(PDWORD)&buff[7] = (DWORD)(PUCHAR)pRemoteParam + 0x600;
-
-		//jmp context.Eip = E9 (context.Eip - cur) 
-		
-		*(PDWORD)&buff[15] = context.Eip - ((DWORD)(PUCHAR)pRemoteParam + 19);
-
-		ret = WriteProcessMemory(hProcess, pRemoteParam, buff, sizeof(buff), &dwWriten);
-		if (!ret)
-		{
-			AfxMessageBox("WriteProcessMemory shellcode失败");
-			return;
-		}
-
-		context.Eip = (DWORD)pRemoteParam;
-		Wow64SetThreadContext(tHandle, &context);
-
+		AfxMessageBox("GetThreadContext失败");
+		return;
 	}
-	else
+
+
+	char buff[] =
 	{
-		//获取这个线程的Context
-
-		CONTEXT context = { 0 };
-		context.ContextFlags = CONTEXT_ALL;
-		ret = GetThreadContext(tHandle, &context);
-		if (!ret)
-		{
-			AfxMessageBox("GetThreadContext失败");
-			return;
-		}
-
-
-		char buff[] =
-		{
-			0x50,                                              // push rax
-			0x51,                                              // push rcx
-			0x48,0xB9,0x89,0x67,0x45,0x23,0x01,0x00,0x00,0x00, // mov rcx,123456789 // 参数1
-			0x48,0xB8,0x89,0x67,0x45,0x23,0x01,0x00,0x00,0x00, // mov rax,123456789 // LoadLibraryA地址
-			0x48,0x83,0xEC,0x48,                               // sub rsp,48
-			0xFF,0xD0,                                         // call rax
-			0x48,0x83,0xC4,0x48,                               // add rsp,48
-			0x59,                                              // pop rcx
-			0x58,                                              // pop rax
-			0xFF,0x25,0x00,0x00,0x00,0x00,                     // ff25 间隔4字节后面8个字节为跳转地址
-			0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00            // 跳转的地址
-		};
-		*(PULONG64)&buff[4] = (ULONG64)(PUCHAR)pRemoteParam + 0x600;
-		*(PULONG64)&buff[14] = m_LoadLibraryA_Addr;
-		*(PULONG64)&buff[40] = context.Rip;
-		ret = WriteProcessMemory(hProcess, pRemoteParam, buff, sizeof(buff), &dwWriten);
-		// 将shellcode写入到目标进程
-		if (!ret)
-		{
-			AfxMessageBox("WriteProcessMemory shellcode失败");
-			return;
-		}
-		// 设置线程新的Rip
-		context.Rip = (ULONG64)pRemoteParam;
-		SetThreadContext(tHandle, &context);
+		0x50,                                              // push rax
+		0x51,                                              // push rcx
+		0x48,0xB9,0x89,0x67,0x45,0x23,0x01,0x00,0x00,0x00, // mov rcx,123456789 // 参数1
+		0x48,0xB8,0x89,0x67,0x45,0x23,0x01,0x00,0x00,0x00, // mov rax,123456789 // LoadLibraryA地址
+		0x48,0x83,0xEC,0x48,                               // sub rsp,48
+		0xFF,0xD0,                                         // call rax
+		0x48,0x83,0xC4,0x48,                               // add rsp,48
+		0x59,                                              // pop rcx
+		0x58,                                              // pop rax
+		0xFF,0x25,0x00,0x00,0x00,0x00,                     // ff25 间隔4字节后面8个字节为跳转地址
+		0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00            // 跳转的地址
+	};
+	*(PULONG64)&buff[4] = (ULONG64)(PUCHAR)pRemoteParam + 0x600;
+	*(PULONG64)&buff[14] = m_LoadLibraryA_Addr;
+	*(PULONG64)&buff[40] = context.Rip;
+	ret = WriteProcessMemory(hProcess, pRemoteParam, buff, sizeof(buff), &dwWriten);
+	// 将shellcode写入到目标进程
+	if (!ret)
+	{
+		AfxMessageBox("WriteProcessMemory shellcode失败");
+		return;
 	}
+	// 设置线程新的Rip
+	context.Rip = (ULONG64)pRemoteParam;
+	SetThreadContext(tHandle, &context);
+#else
+
+
+	context32.ContextFlags = CONTEXT_ALL;
+	Wow64GetThreadContext(tHandle, &context32);
+	char buff[] =
+	{
+		0x60,                          // pushad             
+		0xB8, 0x78, 0x56, 0x34, 0x12,  // mov eax,12345678  // LoadlibraryA地址   
+		0x68, 0x78, 0x56, 0x34, 0x12,  // push 12345678     // 参数地址
+		0xFF, 0xD0,                    // call eax
+		0x61,                          // popad
+		0xE9, 0, 0, 0, 0,              // jmp xxxxxxxx
+	};
+	*(PDWORD)&buff[2] = (DWORD)m_LoadLibraryA_Addr;
+	*(PDWORD)&buff[7] = (DWORD)(PUCHAR)pRemoteParam + 0x600;
+
+	//jmp context.Eip = E9 (context.Eip - cur) 
+
+	*(PDWORD)&buff[15] = context32.Eip - ((DWORD)(PUCHAR)pRemoteParam + 19);
+
+	ret = WriteProcessMemory(hProcess, pRemoteParam, buff, sizeof(buff), &dwWriten);
+	if (!ret)
+	{
+		AfxMessageBox("写入shellcode到目标进程失败");
+		goto END;
+	}
+
+	context32.Eip = (DWORD)pRemoteParam;
+	Wow64SetThreadContext(tHandle, &context32);
+
+#endif // _WIN64
 	
 	// 恢复主线程
 	ResumeThread(tHandle);
+
+END:
 	printf("end==================\n");
+	// 这里不能释放
+	//VirtualFreeEx(hProcess, pRemoteParam, 0x1000, MEM_DECOMMIT);
+
+	CloseHandle(hProcess);
 
 }
 
@@ -1308,4 +1379,591 @@ void CMFCDllInjectDlg::OnBnClickedButtonReflect()
 END:
 	CloseHandle(hFile);
 
+}
+
+
+void CMFCDllInjectDlg::OnBnClickedButtonDuanPeb()
+{
+	HANDLE hProcess = ::OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Select_Pid);
+	if (NULL == hProcess)
+	{
+		AfxMessageBox("打开进程失败");
+		return;
+	}
+
+	BOOL isWow64;
+	IsWow64Process(hProcess, &isWow64); // 返回true为32位进程
+	printf("isWow64 %d \n", isWow64);
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+#else
+	if (!isWow64)
+	{
+		AfxMessageBox("请选择32位进程");
+		return;
+	}
+#endif // _WIN64
+
+	// 分配参数空间
+	CString param(m_DllPath);
+	LPVOID pRemoteParam = ::VirtualAllocEx(hProcess, NULL, 0x1000,
+		MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
+	if (pRemoteParam == NULL)
+	{
+		AfxMessageBox("分配参数空间失败");
+		return;
+	}
+	/////////////////////////////////////////
+	CString dllPath = m_DllPath;
+
+	char* pszMultiByte = m_DllPath.GetBuffer();  //strlen(pwsUnicode)=5
+	int iSize;
+	wchar_t* dllPathUnicode;
+
+	//返回接受字符串所需缓冲区的大小，已经包含字符结尾符'\0'
+	iSize = MultiByteToWideChar(CP_ACP, 0, pszMultiByte, -1, NULL, 0); //iSize =wcslen(pwsUnicode)+1=6
+	dllPathUnicode = (wchar_t*)malloc(iSize * sizeof(wchar_t)); //不需要 pwszUnicode = (wchar_t *)malloc((iSize+1)*sizeof(wchar_t))
+	MultiByteToWideChar(CP_ACP, 0, pszMultiByte, -1, dllPathUnicode, iSize);
+	printf("dllPathUnicode: %ws\n", dllPathUnicode);
+	/////////////////////////////////////////
+
+	SIZE_T written = 0;
+	BOOL ret;
+	UINT32 lpPeb = 0;
+	// get PEB
+	PEB_LDR_DATA32 ldrData32 = { 0 };
+
+	// 循环遍历链表
+	LDR_DATA_TABLE_ENTRY32 entry32     = { 0 };
+	LDR_DATA_TABLE_ENTRY32 lastEntry   = { 0 };
+	LDR_DATA_TABLE_ENTRY32 nextEntry   = { 0 };
+	DWORD index = 0;
+	PEB32 peb32 = { 0 };
+
+	PEB_LDR_DATA64 ldrData64           = { 0 };
+	LDR_DATA_TABLE_ENTRY64 entry64     = { 0 };
+	LDR_DATA_TABLE_ENTRY64 lastEntry64 = { 0 };
+	LDR_DATA_TABLE_ENTRY64 nextEntry64 = { 0 };
+
+#ifdef _WIN64
+	if (isWow64)
+	{
+		AfxMessageBox("请选择64位进程");
+		return;
+	}
+	void * ress = NtCurrentTeb();
+	printf("ress %p\n", ress);
+	//printf("__readgsqword: %llX\n", __readgsqword(0));
+	//printf("__readgsqword: %llX\n", __readgsqword(0x60));
+	typedef NTSTATUS(WINAPI* PNT_QUERY_INFORMATION_PROCESS)(
+		HANDLE ProcessHandle,
+		PROCESSINFOCLASS ProcessInformationClass,
+		PVOID ProcessInformation,
+		ULONG ProcessInformationLength,
+		PULONG ReturnLength
+		);
+	PNT_QUERY_INFORMATION_PROCESS NtQueryInformationProcess = (PNT_QUERY_INFORMATION_PROCESS)GetProcAddress(
+		GetModuleHandleA("ntdll"), "NtQueryInformationProcess");
+	if (NtQueryInformationProcess == NULL)
+	{
+		AfxMessageBox("获取NtQueryInformationProcess函数指针失败");
+		return;
+	}
+
+	PROCESS_BASIC_INFORMATION pbi;
+	ULONG returnLength;
+	NTSTATUS status = NtQueryInformationProcess(hProcess, ProcessBasicInformation, 
+		(PVOID)&pbi, sizeof(PROCESS_BASIC_INFORMATION), &returnLength);
+	if (status != 0)
+	{
+		AfxMessageBox("执行NtQueryInformationProcess失败");
+		return;
+	}
+
+	printf("peb: %llX\n", pbi.PebBaseAddress);
+	PEB64 peb64 = { 0 };
+	ret = ReadProcessMemory(hProcess,(PVOID) pbi.PebBaseAddress, &peb64, sizeof(PEB64), &written);
+	if (!ret)
+	{
+		AfxMessageBox("ReadProcessMemory 1 失败");
+		goto END;
+	}
+
+	printf("peb64  %llx\n", peb64.Ldr);
+	ret = ReadProcessMemory(hProcess, (PVOID)peb64.Ldr, &ldrData64, sizeof(PEB_LDR_DATA64), &written);
+	if (!ret)
+	{
+		AfxMessageBox("ReadProcessMemory 2 失败");
+		goto END;
+	}
+
+
+	UINT64 ptr = ldrData64.InLoadOrderLinks.Flink;
+	ULONG64 offset = 0;
+	//offset = sizeof(LIST_ENTRY64)*2;
+	index = 1;
+	while (true)
+	{
+		//printf("===ptr:%llx\n",ptr);
+		// 
+		if (!ptr)
+		{
+			printf("ptr is null \n");
+			break;
+		}
+		//ret = ReadProcessMemory(hProcess, (PVOID)ptr, (PVOID)((ULONG64)&entry64 + offset),
+			ret = ReadProcessMemory(hProcess, (PVOID)ptr, (PVOID)&entry64,
+			sizeof(LDR_DATA_TABLE_ENTRY64), &written);
+		if (!ret)
+		{
+			AfxMessageBox("ReadProcessMemory 3 失败");
+			goto END;
+		}
+		if (entry64.SizeOfImage == 0)
+		{
+			printf("entry64.SizeOfImage == 0 break \n");
+			break;
+		}
+
+		// print name
+		WCHAR name[1024] = { 0 };
+		ret = ReadProcessMemory(hProcess, (PVOID)entry64.FullDllName.Buffer, 
+			name, entry64.FullDllName.Length, &written);
+		if (!ret)
+		{
+			printf("entry64.FullDllName.Buffer:%llX \n", entry64.FullDllName.Buffer);
+			AfxMessageBox("ReadProcessMemory 4 失败 ");
+			goto END;
+		}
+
+		if (0 == StrCmpW(dllPathUnicode, name))
+		{
+			// 读取当后一个entry
+			ret = ReadProcessMemory(hProcess, (PVOID)(entry64.InLoadOrderLinks.Flink), (PVOID)&nextEntry64,
+				sizeof(LDR_DATA_TABLE_ENTRY64), &written);
+			if (!ret)
+			{
+				printf("ReadProcessMemory 3 \n");
+				AfxMessageBox("ReadProcessMemory 3 失败 ");
+				goto END;
+			}
+
+			printf("开始断链处理、\n");
+
+			// 读取当前一个entry
+			ret = ReadProcessMemory(hProcess, (PVOID)(entry64.InLoadOrderLinks.Blink), (PVOID)&lastEntry64,
+				sizeof(LDR_DATA_TABLE_ENTRY64), &written);
+			if (!ret)
+			{
+				printf("ReadProcessMemory 4 \n");
+				AfxMessageBox("ReadProcessMemory 4 失败 ");
+				goto END;
+			}
+	
+			// 前一个Flink = 后一个Flink
+			ret = WriteProcessMemory(hProcess, (LPVOID)entry64.InLoadOrderLinks.Blink,
+				(LPVOID)&entry64.InLoadOrderLinks.Flink, 8, &written);
+			if (!ret)
+			{
+				printf("WriteProcessMemory 1 \n");
+			}
+			// 后一个Blink = 前一个Blink
+			ret = WriteProcessMemory(hProcess, (LPVOID)(UINT64(entry64.InLoadOrderLinks.Flink)+ 0x8),
+				(LPVOID)&entry64.InLoadOrderLinks.Blink, 8, &written);
+			if (!ret)
+			{
+				printf("WriteProcessMemory 2 \n");
+			}
+			printf("断链处理完成、\n");
+			break;
+
+		}
+
+
+		printf("index:%d dllBase:%llX, size:%llX \tname: %ws\n", index++, entry64.DllBase, entry64.SizeOfImage, name);
+		ptr = entry64.InLoadOrderLinks.Flink;
+
+
+	}
+
+#else
+	// x32
+			// 50               | push eax
+			// 53               | push ebx
+			// E8 F9000000      | call 77461D33 调用偏移+0x100，获得eip，放到eax
+			// 64:8B1D 30000000 | mov ebx, dword ptr fs : [30]
+			// 83E8 07          | sub eax, 7
+			// 8998 00020000    | mov dword ptr ds : [eax + 200] , ebx
+			// 5B               | pop ebx
+			// 58               | pop eax
+
+	//void* ress = NtCurrentTeb(); // 获取到是自己当前线程的
+
+	char buff[] = {
+		0x50,
+		0x53,
+		0xE8, 0xF9, 0x00, 0x00, 0x00,
+		0x64, 0x8B, 0x1D, 0x30, 0x00, 0x00, 0x00,
+		0x83, 0xE8, 0x07,
+		0x89, 0x98, 0x00, 0x02, 0x00, 0x00,  //把PEB给到+0x200处内存
+		0x5B,
+		0x58,
+		0xC3,
+	};
+	ret = WriteProcessMemory(hProcess, pRemoteParam, buff, sizeof(buff), &written);
+	if (!ret)
+	{
+		AfxMessageBox("WriteProcessMemory 1失败");
+		goto END;
+	}
+	// +0x100处
+	// 8B0424 | mov eax, dword ptr ss : [esp]
+	// C3 | ret
+	char buff2[] = {
+		0xCC,0xCC,
+		0x8B, 0x04, 0x24,
+		0xC3,
+	};
+	ret = WriteProcessMemory(hProcess, (LPVOID)(DWORD(pRemoteParam) + 0x100 - 2), buff2, sizeof(buff2), &written);
+	if (!ret)
+	{
+		AfxMessageBox("WriteProcessMemory 2失败");
+		goto END;
+	}
+
+	HANDLE hThread = CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)pRemoteParam, NULL, 0, 0);
+	if (!hThread)
+	{
+		AfxMessageBox("CreateRemoteThread 失败");
+		goto END;
+	}
+	WaitForSingleObject(hThread, INFINITE);
+	printf("remote thread exec finished\n");
+
+	// read 
+	ret = ReadProcessMemory(hProcess, (LPVOID)(DWORD(pRemoteParam) + 0x200), (LPVOID)&lpPeb, 4, &written);
+	if (!ret)
+	{
+		AfxMessageBox("ReadProcessMemory失败");
+		goto END;
+	}
+	printf("PEB addr %p\n", lpPeb);
+	printf("PEB addr %X\n", lpPeb);
+
+
+	///////////////////////////// 
+
+	ret = ReadProcessMemory(hProcess, (LPVOID)(lpPeb), (LPVOID)&peb32, sizeof(PEB32), &written);
+	if (!ret)
+	{
+		AfxMessageBox("ReadProcessMemory PEB32失败");
+		goto END;
+	}
+
+	printf("peb32.Ldr: %X\n", peb32.Ldr);
+
+	// get LDR 
+
+	ret = ReadProcessMemory(hProcess, (LPVOID)(peb32.Ldr), (LPVOID)&ldrData32, sizeof(PEB_LDR_DATA32), &written);
+	if (!ret)
+	{
+		AfxMessageBox("ReadProcessMemory PEB_LDR_DATA32失败");
+		goto END;
+	}
+
+	printf("===========开始处理InLoadOrderModuleList +0x0c ==========\n");
+
+
+	UINT32 prev = ldrData32.InLoadOrderModuleList.Flink;
+	while (true)
+	{
+		WCHAR dllName[255] = { 0 };
+		// read next 
+		ret = ReadProcessMemory(hProcess, (LPVOID)(prev), (LPVOID)&entry32,
+			sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+		if (!ret)
+		{
+			AfxMessageBox("ReadProcessMemory LDR_DATA_TABLE_ENTRY32失败");
+			goto END;
+		}
+
+		if (entry32.DllBase == 0)
+		{
+			break;
+		}
+
+		ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.FullDllName.Buffer), (LPVOID)dllName,
+			entry32.FullDllName.Length, &written);
+		printf("%d\t Flink:%X Blink:%X dllbase:%X \tsize:%X \t %ws \n", index++,
+			entry32.InLoadOrderModuleList.Flink, entry32.InLoadOrderModuleList.Blink,
+			entry32.DllBase, entry32.SizeOfImage, dllName);
+
+		//if(strcmpi)
+		if (0 == StrCmpW(dllPathUnicode, dllName))
+		{
+			// 找到自己的dll
+			printf("find===================================================\n");
+			// 继续向后读一个entry
+			ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.InLoadOrderModuleList.Flink), (LPVOID)&nextEntry,
+				sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+			if (!ret)
+			{
+				AfxMessageBox("ReadProcessMemory LDR_DATA_TABLE_ENTRY32 23失败");
+				goto END;
+			}
+
+			// 断链操作
+
+
+			DWORD oldFlag = 0;
+			//lastEntry.InLoadOrderModuleList.Flink = nextEntry.InLoadOrderModuleList.Flink;
+			//nextEntry.InLoadOrderModuleList.Blink = lastEntry.InLoadOrderModuleList.Blink;
+			///////////  entry32为当前  
+			/////////// 把nextEntry的Blink指向前一个Flink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InLoadOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("VirtualProtectEx err: %X\n", GetLastError());
+			}
+
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InLoadOrderModuleList.Flink + 4),
+				(LPVOID)&entry32.InLoadOrderModuleList.Blink, 4, &written);
+			if (!ret)
+			{
+				printf("WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InLoadOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			/////////// 把lastEntry的Flink指向后一个Blink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InLoadOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("VirtualProtectEx err: %X\n", GetLastError());
+			}
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InLoadOrderModuleList.Blink),
+				(LPVOID)&entry32.InLoadOrderModuleList.Flink, 4, &written);
+			if (!ret)
+			{
+				printf("WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InLoadOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			printf("写入完成===================================================\n");
+			break;
+		}
+		prev = entry32.InLoadOrderModuleList.Flink;
+		lastEntry = entry32;
+	}
+
+
+	printf("===========开始处理InMemoryOrderModuleList +0x14 ==========\n");
+
+	entry32 = { 0 };
+	lastEntry = { 0 };
+	nextEntry = { 0 };
+	index = 0;
+	prev = ldrData32.InLoadOrderModuleList.Flink;
+	while (true)
+	{
+		WCHAR dllName[255] = { 0 };
+		// read next 
+		//printf("2 prev:%X\n", prev);
+		ret = ReadProcessMemory(hProcess, (LPVOID)(prev), (LPVOID)&entry32,
+			sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+		if (!ret)
+		{
+			printf("2 ReadProcessMemory LDR_DATA_TABLE_ENTRY32失败 %X\n", GetLastError());
+			goto END;
+		}
+
+		if (entry32.DllBase == 0)
+		{
+			break;
+		}
+
+		ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.FullDllName.Buffer), (LPVOID)dllName,
+			entry32.FullDllName.Length, &written);
+		printf("%d\t Flink:%X Blink:%X dllbase:%X \tsize:%X \t %ws \n", index++,
+			entry32.InMemoryOrderModuleList.Flink, entry32.InMemoryOrderModuleList.Blink,
+			entry32.DllBase, entry32.SizeOfImage, dllName);
+
+		//if(strcmpi)
+		if (0 == StrCmpW(dllPathUnicode, dllName))
+		{
+			// 找到自己的dll
+			printf("2 find===================================================\n");
+			// 继续向后读一个entry
+			ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.InMemoryOrderModuleList.Flink), (LPVOID)&nextEntry,
+				sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+			if (!ret)
+			{
+				printf("2 ReadProcessMemory LDR_DATA_TABLE_ENTRY32 23失败 \n");
+				goto END;
+			}
+
+			// 断链操作
+
+
+			DWORD oldFlag = 0;
+			//lastEntry.InLoadOrderModuleList.Flink = nextEntry.InLoadOrderModuleList.Flink;
+			//nextEntry.InLoadOrderModuleList.Blink = lastEntry.InLoadOrderModuleList.Blink;
+			///////////  entry32为当前  
+			/////////// 把nextEntry的Blink指向前一个Flink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InMemoryOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("2 VirtualProtectEx err: %X\n", GetLastError());
+			}
+
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InMemoryOrderModuleList.Flink + 4),
+				(LPVOID)&entry32.InMemoryOrderModuleList.Blink, 4, &written);
+			if (!ret)
+			{
+				printf("2 WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InMemoryOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			/////////// 把lastEntry的Flink指向后一个Blink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InMemoryOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("2 VirtualProtectEx err: %X\n", GetLastError());
+			}
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InMemoryOrderModuleList.Blink),
+				(LPVOID)&entry32.InMemoryOrderModuleList.Flink, 4, &written);
+			if (!ret)
+			{
+				printf("2 WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InMemoryOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			printf("2 写入完成===================================================\n");
+			break;
+		}
+		prev = entry32.InLoadOrderModuleList.Flink;
+		if (prev == 0)
+		{
+			printf("InMemoryOrderModuleList.Flink is 0 \n");
+			break;
+		}
+		lastEntry = entry32;
+	}
+
+	printf("===========开始处理InInitializationOrderModuleList +0x1c ==========\n");
+
+	entry32 = { 0 };
+	lastEntry = { 0 };
+	nextEntry = { 0 };
+	index = 0;
+	prev = ldrData32.InLoadOrderModuleList.Flink;
+	while (true)
+	{
+		WCHAR dllName[255] = { 0 };
+		// read next 
+		//printf("3 prev:%X\n", prev);
+		ret = ReadProcessMemory(hProcess, (LPVOID)(prev), (LPVOID)&entry32,
+			sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+		if (!ret)
+		{
+			printf("3 ReadProcessMemory LDR_DATA_TABLE_ENTRY32失败 %X\n", GetLastError());
+			goto END;
+		}
+
+		if (entry32.DllBase == 0)
+		{
+			break;
+		}
+
+		ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.FullDllName.Buffer), (LPVOID)dllName,
+			entry32.FullDllName.Length, &written);
+		printf("%d\t Flink:%X Blink:%X dllbase:%X \tsize:%X \t %ws \n", index++,
+			entry32.InInitializationOrderModuleList.Flink, entry32.InInitializationOrderModuleList.Blink,
+			entry32.DllBase, entry32.SizeOfImage, dllName);
+
+		//if(strcmpi)
+		if (0 == StrCmpW(dllPathUnicode, dllName))
+		{
+			// 找到自己的dll
+			printf("3 find===================================================\n");
+			// 继续向后读一个entry
+			ret = ReadProcessMemory(hProcess, (LPVOID)(entry32.InInitializationOrderModuleList.Flink), (LPVOID)&nextEntry,
+				sizeof(LDR_DATA_TABLE_ENTRY32), &written);
+			if (!ret)
+			{
+				printf("3 ReadProcessMemory 继续向后读一个 23失败 \n");
+				goto END;
+			}
+
+			// 断链操作
+
+
+			DWORD oldFlag = 0;
+			//lastEntry.InLoadOrderModuleList.Flink = nextEntry.InLoadOrderModuleList.Flink;
+			//nextEntry.InLoadOrderModuleList.Blink = lastEntry.InLoadOrderModuleList.Blink;
+			///////////  entry32为当前  
+			/////////// 把nextEntry的Blink指向前一个Flink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InInitializationOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("3 VirtualProtectEx err: %X\n", GetLastError());
+			}
+
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InInitializationOrderModuleList.Flink + 4),
+				(LPVOID)&entry32.InInitializationOrderModuleList.Blink, 4, &written);
+			if (!ret)
+			{
+				printf("3 WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InInitializationOrderModuleList.Flink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			/////////// 把lastEntry的Flink指向后一个Blink
+			ret = VirtualProtectEx(hProcess, (LPVOID)entry32.InInitializationOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), PAGE_EXECUTE_READWRITE, &oldFlag);
+			if (!ret)
+			{
+				printf("3 VirtualProtectEx err: %X\n", GetLastError());
+			}
+			ret = WriteProcessMemory(hProcess, (LPVOID)(entry32.InInitializationOrderModuleList.Blink),
+				(LPVOID)&entry32.InInitializationOrderModuleList.Flink, 4, &written);
+			if (!ret)
+			{
+				printf("3 WriteProcessMemory err: %X\n", GetLastError());
+			}
+			VirtualProtectEx(hProcess, (LPVOID)entry32.InInitializationOrderModuleList.Blink,
+				sizeof(PEB_LDR_DATA32), oldFlag, &oldFlag);
+
+			printf("3 写入完成===================================================\n");
+			break;
+		}
+
+		// 这里位置不变
+		prev = entry32.InLoadOrderModuleList.Flink;
+		if (prev == 0)
+		{
+			printf("3 InInitializationOrderModuleList.Flink is 0 \n");
+			break;
+		}
+		lastEntry = entry32;
+	}
+#endif // _WIN64
+
+
+
+	END:
+	VirtualFreeEx(hProcess, pRemoteParam, 0x1000, MEM_DECOMMIT);
+	CloseHandle(hProcess);
 }

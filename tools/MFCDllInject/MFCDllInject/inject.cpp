@@ -88,24 +88,24 @@ BOOL GetProcessDllFunctionsByNameX32(IN DWORD processID, IN CString dllname, IN 
 		sizeof(IMAGE_NT_HEADERS32)+ sizeof(IMAGE_DOS_HEADER)+ pDosHeader->e_lfanew, &realRead);
 	PIMAGE_NT_HEADERS32	pNtHeader = (PIMAGE_NT_HEADERS32)(ULONG64(buffer) + pDosHeader->e_lfanew);
 
-	printf("\t realRead %X %d %d \n", realRead, realRead, sizeof(IMAGE_NT_HEADERS32));
-	printf("\t DosHeader %p \n", pDosHeader);
-	printf("\t pNtHeader %p \n", pNtHeader);
-	printf("\t DosHeader e_lfanew %d \n", pDosHeader->e_lfanew);
+	//printf("\t realRead %X %d %d \n", realRead, realRead, sizeof(IMAGE_NT_HEADERS32));
+	//printf("\t DosHeader %p \n", pDosHeader);
+	//printf("\t pNtHeader %p \n", pNtHeader);
+	//printf("\t DosHeader e_lfanew %d \n", pDosHeader->e_lfanew);
 
 	// 导出表
 	IMAGE_DATA_DIRECTORY exp = pNtHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
 
-	printf("\t exportRVA exp %p \n", exp);
-	printf("\t exportRVA Size %X \n", exp.Size);
-	printf("\t exportRVA VirtualAddress %X \n", exp.VirtualAddress);
+	//printf("\t exportRVA exp %p \n", exp);
+	//printf("\t exportRVA Size %X \n", exp.Size);
+	//printf("\t exportRVA VirtualAddress %X \n", exp.VirtualAddress);
 
 	// 读取导出表
 	ReadProcessMemory(hProcess,(LPVOID)((DWORD)modinfo.lpBaseOfDll + exp.VirtualAddress), buffer, exp.Size, &realRead);
 
 	PIMAGE_EXPORT_DIRECTORY	pExport = (PIMAGE_EXPORT_DIRECTORY)buffer;
-	printf("\t pExport->NumberOfFunctions %X \n", pExport->NumberOfFunctions);
-	printf("\t pExport->NumberOfFunctions %X \n", pExport->NumberOfFunctions);
+	//printf("\t pExport->NumberOfFunctions %X \n", pExport->NumberOfFunctions);
+	//printf("\t pExport->NumberOfFunctions %X \n", pExport->NumberOfFunctions);
 
 
 	if (pExport->NumberOfFunctions > 0)

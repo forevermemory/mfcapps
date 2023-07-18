@@ -15,6 +15,7 @@
 #define IDC_EDIT_DLL_PATH               1002
 #define IDC_BUTTON_UNINSTALL            1003
 #define IDC_BUTTON_OPENPROCESS2         1004
+#define IDC_BUTTON_DUAN_PEB             1004
 #define IDC_BUTTON_SELECT_DLL           1007
 #define IDC_EDIT_PID                    1008
 #define IDC_LIST2                       1009
