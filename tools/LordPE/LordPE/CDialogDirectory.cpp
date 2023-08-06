@@ -101,10 +101,9 @@ BEGIN_MESSAGE_MAP(CDialogDirectory, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_EXPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonExportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IMPORT_DETAIL, &CDialogDirectory::OnBnClickedButtonImportDetail)
 	ON_BN_CLICKED(IDC_BUTTON_IAT, &CDialogDirectory::OnBnClickedButtonIat)
-<<<<<<< HEAD
+
 	ON_BN_CLICKED(IDC_BUTTON_RELOCATION, &CDialogDirectory::OnBnClickedButtonRelocation)
-=======
->>>>>>> 84be4c80ff21ace262badf9d5dc0904cf8aabd7f
+
 END_MESSAGE_MAP()
 
 
@@ -370,7 +369,7 @@ void CDialogDirectory::OnBnClickedButtonExportDetail()
 
 
 void CDialogDirectory::OnBnClickedButtonImportDetail()
-<<<<<<< HEAD
+
 {
 	// TODO: 在此添加控件通知处理程序代码
 	CDialogImport dlg;
@@ -381,13 +380,7 @@ void CDialogDirectory::OnBnClickedButtonImportDetail()
 }
 
 
-void CDialogDirectory::OnBnClickedButtonIat()
-{
 
-	CDialogIAT dlg;
-	dlg.DoModal();
-
-}
 
 
 void CDialogDirectory::OnBnClickedButtonRelocation()
@@ -396,14 +389,7 @@ void CDialogDirectory::OnBnClickedButtonRelocation()
 	
 	CDialogRelocation dlg;
 	dlg.DoModal();
-	
-=======
-{
-	// TODO: 在此添加控件通知处理程序代码
-	CDialogImport dlg;
-	// dlg.ShowWindow(SW_SHOW);
 
-	dlg.DoModal();
 
 }
 
@@ -445,5 +431,5 @@ void CDialogDirectory::OnBnClickedButtonIat()
 	
 		pImport++;
 	}
->>>>>>> 84be4c80ff21ace262badf9d5dc0904cf8aabd7f
+
 }
