@@ -14,8 +14,8 @@
 
 #define arraysize(p) (sizeof(p)/sizeof((p)[0]))
 
-#define DeviceName L"\\Device\\MyDDKDevice"
-#define LinkName L"\\??\\MyDDKDevice"
+#define DeviceName L"\\Device\\MyDriver"
+#define LinkName L"\\??\\MyDriver"
 
 NTSTATUS CreateDevice(IN PDRIVER_OBJECT pDriverObject);
 VOID HelloDDKUnload(IN PDRIVER_OBJECT pDriverObject);

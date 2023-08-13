@@ -157,20 +157,14 @@ NTSTATUS HelloDDKRead(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 
 	PIO_STACK_LOCATION stack = IoGetCurrentIrpStackLocation(pIrp);
 	ULONG ulReadLength = stack->Parameters.Read.Length;
-
-	// 完成IRP
-	//设置IRP完成状态
-	pIrp->IoStatus.Status = status;
-
-	//设置IRP操作了多少字节
-	pIrp->IoStatus.Information = ulReadLength;	// bytes xfered
-
+	
+	// 读写R3传入的数据
 	memset(pIrp->AssociatedIrp.SystemBuffer, 0xAA, ulReadLength);
-
-	//处理IRP
+	
+	// 完成IRP
+	pIrp->IoStatus.Status = status;
+	pIrp->IoStatus.Information = ulReadLength;	// 实际操作的长度
 	IoCompleteRequest(pIrp, IO_NO_INCREMENT);
 
-
-	DbgPrint("Leave HelloDDKRead\n");
 	return status;
 }
