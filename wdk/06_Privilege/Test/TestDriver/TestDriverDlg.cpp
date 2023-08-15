@@ -9,8 +9,6 @@
 #include "afxdialogex.h"
 #include "define.h"
 
-#include <psapi.h>
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
@@ -92,8 +90,6 @@ BEGIN_MESSAGE_MAP(CTestDriverDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_ENUM_OB_CALLBACLS, &CTestDriverDlg::OnBnClickedButtonEnumObCallbacls)
 	ON_BN_CLICKED(IDC_BUTTON_REMOVE_PRIVILEGE, &CTestDriverDlg::OnBnClickedButtonRemovePrivilege)
 	ON_BN_CLICKED(IDC_BUTTON_ADD_PRIVILEGE, &CTestDriverDlg::OnBnClickedButtonAddPrivilege)
-	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_HANDLES, &CTestDriverDlg::OnBnClickedButtonR3EnumHandles)
-	ON_BN_CLICKED(IDC_BUTTON_R3_NtQueryInformationProcess, &CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess)
 END_MESSAGE_MAP()
 
 
@@ -136,13 +132,6 @@ BOOL CTestDriverDlg::OnInitDialog()
 
 	m_PID = pid;
 	UpdateData(FALSE);
-
-#pragma warning(disable:4996)
-	AllocConsole(); // 添加调试窗口
-	freopen("conin$", "r+t", stdin); // 将输入流设置为当前调试窗口
-	freopen("conout$", "w+t", stdout); // 将输出流设置为当前调试窗口
-	SetConsoleTitleA("调试窗口");
-
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -665,226 +654,4 @@ void CTestDriverDlg::OnBnClickedButtonAddPrivilege()
 	char buf[64] = { 0 };
 	sprintf_s(buf, "exe: dwRetSize:%lld, pid:%d, va:%p, value:%llX", dwRetSize, m_TargetPid, virtualAddr, outBuf);
 	OutputDebugStringA(buf);
-}
-
-
-//进程句柄转PID
-DWORD HandleToPid(IN HANDLE hProcess)
-{
-	p_NtQueryInformationProcess NtQueryInformationProcess = (p_NtQueryInformationProcess)GetProcAddress(
-		GetModuleHandleA("ntdll.dll"), "NtQueryInformationProcess");
-
-	PROCESS_BASIC_INFORMATION pbi = { 0 }; //NTDEFS::SYSTEM_BASIC_INFORMATION 	NTDEFS::
-
-	//NtQueryInformationProcess(hProcess, ProcessBasicInformation, &pbi, sizeof(_PROCESS_BASIC_INFORMATION), 0);
-	//返回0表示成功
-	NTSTATUS status = NtQueryInformationProcess(hProcess,
-		ProcessBasicInformation,
-		(PVOID)&pbi,
-		sizeof(PROCESS_BASIC_INFORMATION),
-		NULL);
-
-	if (!status)
-	{
-		return (DWORD)pbi.UniqueProcessId;
-	}
-
-	return 0;
-}
-
-#define STATUS_INFO_LENGTH_MISMATCH 0xC0000004
-
-void CTestDriverDlg::OnBnClickedButtonR3EnumHandles()
-{
-
-	p_NtQuerySystemInformation NtQuerySystemInformation = (p_NtQuerySystemInformation)GetProcAddress(
-		GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation");
-
-	p_NtQueryObject NtQueryObject = (p_NtQueryObject)GetProcAddress(
-		GetModuleHandleA("ntdll.dll"), "NtQueryObject");
-	NTSTATUS status;
-
-	///////// 方式1
-	// 第一次查询
-	SYSTEM_HANDLE_INFORMATION firstInfo = { 0 };
-	ULONG totalLen = 0;
-	NtQuerySystemInformation(SystemHandleInformation, &firstInfo, sizeof(SYSTEM_HANDLE_INFORMATION), &totalLen);
-	PVOID buffer = malloc(totalLen);
-	NtQuerySystemInformation(SystemHandleInformation, buffer, totalLen, NULL);
-
-
-	///////// 方式2
-	//// 循环申请内存
-	//ULONG bufferSize = 0x8000;
-	//PVOID buffer = malloc(bufferSize);
-	//while ((status = NtQuerySystemInformation(
-	//	SystemHandleInformation,
-	//	buffer,
-	//	bufferSize,
-	//	NULL
-	//)) == STATUS_INFO_LENGTH_MISMATCH)
-	//{
-	//	bufferSize *= 2;
-	//	buffer = realloc(buffer, bufferSize);
-	//	printf("realloc\n");
-	//}
-
-
-	OBJECT_NAME_INFORMATION* szName = (OBJECT_NAME_INFORMATION*)malloc(1000);
-	OBJECT_NAME_INFORMATION* szType = (OBJECT_NAME_INFORMATION*)malloc(1000);
-
-	PSYSTEM_HANDLE_INFORMATION info = (PSYSTEM_HANDLE_INFORMATION)buffer;
-	ULONG handleCount = info->HandleCount;
-	for (size_t i = 0; i < handleCount; i++)
-	{
-		if (info->Handles[i].UniqueProcessId == 57184)
-		{
-			HANDLE newHandle = NULL;
-			DWORD dwFlags1 = 0;
-			DWORD dwFlags2 = 0;
-
-			SYSTEM_HANDLE cur = info->Handles[i];
-			DuplicateHandle(OpenProcess(PROCESS_ALL_ACCESS, FALSE, cur.UniqueProcessId),
-				(HANDLE)cur.Handle,
-				GetCurrentProcess(),
-				&newHandle,
-				DUPLICATE_SAME_ACCESS,
-				FALSE,
-				DUPLICATE_SAME_ACCESS);
-			if (newHandle)
-			{
-				NTSTATUS status1 = NtQueryObject(newHandle, ObjectNameInformation, szName, 512, &dwFlags1);
-				NTSTATUS status2 = NtQueryObject(newHandle, ObjectTypeInformation, szType, 128, &dwFlags2);
-
-				if (StrCmpW(szType->Name.Buffer, L"Process") == 0)
-				{
-					
-					DWORD targetPid =  HandleToPid(newHandle);
-					
-					// 目标pid名称 
-					char tempProcName[MAX_PATH] = { 0 };
-					//GetModuleBaseNameA(newHandle, NULL, tempProcName, MAX_PATH); // xxx.exe
-					GetModuleFileNameExA(newHandle, NULL, tempProcName, MAX_PATH); // C:/xxx.exe
-					//GetProcessImageFileNameA(newHandle,  tempProcName, MAX_PATH); // \Device\HarddiskVolume6\xxx.exe
-					
-					printf("pid:%d, handle:%X, 权限:%X, targetPid:%d, targetName:%s  ",
-						info->Handles[i].UniqueProcessId,
-						info->Handles[i].Handle,
-						info->Handles[i].GrantedAccess,
-						targetPid, tempProcName
-						);
-					wprintf(L"%ws -- %ws\n",  szType->Name.Buffer, szName->Name.Buffer);
-				}
-		
-			}
-			
-		}
-
-	}
-
-	// Ex 版本
-	/*=
-	SYSTEM_HANDLE_INFORMATION_EX handleInfo = {0};
-	ULONG retLength = 0;
-	DWORD ret = 0;
-
-
-	ULONG bufferSize = 0x8000;
-	PVOID buffer = malloc(bufferSize);
-
-	while ((status = NtQuerySystemInformation(
-		SystemExtendedHandleInformation,
-		buffer,
-		bufferSize,
-		NULL
-	)) == STATUS_INFO_LENGTH_MISMATCH)
-	{
-		bufferSize *= 2;
-		buffer = realloc(buffer, bufferSize);
-		printf("realloc\n");
-	}
-
-	PSYSTEM_HANDLE_INFORMATION_EX info = (PSYSTEM_HANDLE_INFORMATION_EX)buffer;
-	ULONG handleCount = info->NumberOfHandles;
-
-	for (size_t i = 0; i < handleCount; i++)
-	{
-		
-		if (info->Handles[i].UniqueProcessId == 57184)
-		{
-			printf("pid:%d , handle:%X\n",
-				info->Handles[i].UniqueProcessId , info->Handles[i].HandleValue);
-		}
-
-	}
-
-	*/
-
-
-	free(info);
-
-
-}
-
-
-void CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess()
-{
-	p_NtQueryInformationProcess NtQueryInformationProcess = (p_NtQueryInformationProcess)GetProcAddress(
-		GetModuleHandleA("ntdll.dll"), "NtQueryInformationProcess");
-
-	DWORD pid = 57184;
-	pid = 13460;
-	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
-	if (!hProcess)
-	{
-		printf("打开进程句柄失败\n");
-		return;
-	}
-	UINT64 ret = 0;
-	ULONG realLenth = 0;
-	////////// 基本信息
-	PROCESS_BASIC_INFORMATION pbi = { 0 }; 
-	NtQueryInformationProcess(hProcess,
-		ProcessBasicInformation,
-		(PVOID)&pbi,
-		sizeof(PROCESS_BASIC_INFORMATION),
-		NULL);
-	printf("pid:%d, parent:%d, PPEB:%llX\n", 
-			pbi.UniqueProcessId,
-			pbi.InheritedFromUniqueProcessId,
-			pbi.PebBaseAddress
-			);
-
-	// 查询名字系列 ProcessImageFileName  ProcessImageFileNameWin32
-	UNICODE_STRING cmdLine = {0};
-
-	DWORD maxBuffSize = 0x100000;
-	PVOID buffer = malloc(0x100000);
-	printf("sizeof(UNICODE_STRING):%d\n", sizeof(PROCESS_BASIC_INFORMATION));
-	ULONG handleCount = 0;
-	ret = NtQueryInformationProcess(hProcess,
-		ProcessImageFileName,
-		(PVOID)buffer,
-		200,
-		&realLenth);
-	wprintf(L"cmdLine:%d ret:%lld %llx , [%ws]\n", handleCount, realLenth, ret, (WCHAR*)((ULONG64)buffer+0x10));
-	printf("========\n");
-
-
-
-	printf("sizeof(PROCESS_BASIC_INFORMATION):%d\n", sizeof(PROCESS_BASIC_INFORMATION));
-	PROCESS_BASIC_INFORMATION pbi2 = { 0 };
-	//memset(buffer, 0, maxBuffSize);
-	realLenth = 0;
-	INT64 IsDebugged = 0;
-	ret = NtQueryInformationProcess(hProcess,
-		ProcessDebugPort,
-		(PVOID)&IsDebugged,
-		//154,
-		sizeof(INT64),
-		&realLenth);
-	wprintf(L"ret:%lld %llx isDebug:%llX ,realLenth: %lld\n",  ret, ret, IsDebugged, realLenth);
-	printf("========\n");
-
-	free(buffer);
 }

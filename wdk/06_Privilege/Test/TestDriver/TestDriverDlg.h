@@ -54,6 +54,4 @@ public:
 	UINT64 m_Pid_Privilege;
 	afx_msg void OnBnClickedButtonRemovePrivilege();
 	afx_msg void OnBnClickedButtonAddPrivilege();
-	afx_msg void OnBnClickedButtonR3EnumHandles();
-	afx_msg void OnBnClickedButtonR3Ntqueryinformationprocess();
 };
