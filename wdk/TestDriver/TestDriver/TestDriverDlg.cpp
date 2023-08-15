@@ -7,6 +7,8 @@
 #include "TestDriver.h"
 #include "TestDriverDlg.h"
 #include "afxdialogex.h"
+#include "ioctlCode.h"
+#include "systemInformationClass.h"
 #include "define.h"
 
 #include <psapi.h>
@@ -94,6 +96,7 @@ BEGIN_MESSAGE_MAP(CTestDriverDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_ADD_PRIVILEGE, &CTestDriverDlg::OnBnClickedButtonAddPrivilege)
 	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_HANDLES, &CTestDriverDlg::OnBnClickedButtonR3EnumHandles)
 	ON_BN_CLICKED(IDC_BUTTON_R3_NtQueryInformationProcess, &CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess)
+	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_SYSTEMINFO, &CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo)
 END_MESSAGE_MAP()
 
 
@@ -692,7 +695,7 @@ DWORD HandleToPid(IN HANDLE hProcess)
 	return 0;
 }
 
-#define STATUS_INFO_LENGTH_MISMATCH 0xC0000004
+
 
 void CTestDriverDlg::OnBnClickedButtonR3EnumHandles()
 {
@@ -887,4 +890,121 @@ void CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess()
 	printf("========\n");
 
 	free(buffer);
+}
+
+
+void CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo()
+{
+	p_NtQuerySystemInformation NtQuerySystemInformation = (p_NtQuerySystemInformation)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "NtQuerySystemInformation");
+
+	p_NtQueryObject NtQueryObject = (p_NtQueryObject)GetProcAddress(
+		GetModuleHandleA("ntdll.dll"), "NtQueryObject");
+
+	NTSTATUS status;
+
+	ULONG realLen = 0;
+	PVOID buffer = NULL;
+	////////// 处理器信息
+	SYSTEM_PROCESSOR_INFORMATION processorInfo = { 0 };
+	status = NtQuerySystemInformation(SystemProcessorInformation, &processorInfo,
+		sizeof(SYSTEM_PROCESSOR_INFORMATION),
+		&realLen);
+	printf("处理器信息, 第%d代CPU, Level:%d, Revision:%d, 核心数量:%d\n",
+		processorInfo.ProcessorArchitecture,
+		processorInfo.ProcessorLevel,
+		processorInfo.ProcessorRevision,
+		processorInfo.MaximumProcessors);
+
+
+	// SystemPerformanceInformation
+	SYSTEM_PERFORMANCE_INFORMATION performanceInfo = { 0 };
+	status = NtQuerySystemInformation(SystemPerformanceInformation, &performanceInfo,
+		sizeof(SYSTEM_PERFORMANCE_INFORMATION),
+		&realLen); // realLen = 312
+	printf("status:%X , realLen:%d\n", status, realLen);
+
+	// SystemTimeOfDayInformation
+	SYSTEM_TIMEOFDAY_INFORMATION timeOfDayInfo = { 0 };
+	status = NtQuerySystemInformation(SystemTimeOfDayInformation, &timeOfDayInfo,
+		sizeof(SYSTEM_TIMEOFDAY_INFORMATION),
+		&realLen); // realLen = 48
+	printf("status:%X , realLen:%d\n", status, realLen);
+
+	// 获取系统进程的信息
+	SYSTEM_PROCESS_INFORMATION processInfo = { 0 };
+	status = NtQuerySystemInformation(SystemProcessInformation, &processInfo,
+		sizeof(SYSTEM_PROCESS_INFORMATION),
+		&realLen); // realLen = 48
+	printf("status:%X , realLen:%d\n", status, realLen);
+	if (status == STATUS_INFO_LENGTH_MISMATCH)
+	{
+		buffer = malloc(realLen);
+		status = NtQuerySystemInformation(SystemProcessInformation, buffer,
+			realLen,
+			&realLen);
+		PSYSTEM_PROCESS_INFORMATION pInfo = (PSYSTEM_PROCESS_INFORMATION)buffer;
+		for (size_t i = 0; i < pInfo->NumberOfThreads; i++)
+		{
+			printf("内核态时间:%lld, 优先级:%d, 线程状态:%d\n", 
+				pInfo->Threads[i].KernelTime.QuadPart,
+				pInfo->Threads[i].Priority,
+				pInfo->Threads[i].ThreadState
+				);
+		}
+		printf("\n");
+	}
+
+	// 设备信息
+	SYSTEM_DEVICE_INFORMATION deviceInfo = { 0 };
+	status = NtQuerySystemInformation(SystemDeviceInformation, &deviceInfo,
+		sizeof(SYSTEM_DEVICE_INFORMATION),
+		&realLen);
+	printf("NumberOfDisks:%d,NumberOfSerialPorts:%d\n", 
+		deviceInfo.NumberOfDisks,
+		deviceInfo.NumberOfSerialPorts);
+
+	// 驱动模块信息
+	RTL_PROCESS_MODULES processModules = { 0 };
+	status = NtQuerySystemInformation(SystemModuleInformation, &processModules,
+		sizeof(RTL_PROCESS_MODULES),
+		&realLen); // realLen = 48
+	printf("status:%X , realLen:%d\n", status, realLen);
+	if (status == STATUS_INFO_LENGTH_MISMATCH)
+	{
+		buffer = realloc(buffer,realLen);
+		status = NtQuerySystemInformation(SystemModuleInformation, buffer,
+			realLen,
+			&realLen);
+		PRTL_PROCESS_MODULES pInfo = (PRTL_PROCESS_MODULES)buffer;
+
+		for (size_t i = 0; i < processModules.NumberOfModules; i++)
+		{
+			printf("ImageBase:%p size:%X, FullPathName:%s\n", 
+				pInfo->Modules[i].ImageBase,
+				pInfo->Modules[i].ImageSize,
+				pInfo->Modules[i].FullPathName);
+		}
+	}
+
+
+	printf("\n");
+
+
+
+
+
+
+
+
+
+
+
+
+	if (buffer != NULL)
+	{
+		free(buffer);
+	}
+	printf("=====end=====\n");
+
 }

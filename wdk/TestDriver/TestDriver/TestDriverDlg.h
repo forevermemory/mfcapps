@@ -56,4 +56,5 @@ public:
 	afx_msg void OnBnClickedButtonAddPrivilege();
 	afx_msg void OnBnClickedButtonR3EnumHandles();
 	afx_msg void OnBnClickedButtonR3Ntqueryinformationprocess();
+	afx_msg void OnBnClickedButtonR3EnumSysteminfo();
 };

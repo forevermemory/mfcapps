@@ -36,6 +36,12 @@
     <ClInclude Include="define.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="ioctlCode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="systemInformationClass.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestDriver.cpp">
