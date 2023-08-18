@@ -29,6 +29,12 @@
     <Filter Include="提权">
       <UniqueIdentifier>{31cb1139-90c0-4661-901e-b7b9521f6760}</UniqueIdentifier>
     </Filter>
+    <Filter Include="枚举信息">
+      <UniqueIdentifier>{e0d1437b-eb94-4d82-8958-6ace99c00aff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="根据特征码搜索内存">
+      <UniqueIdentifier>{2eadbd4e-ee56-4d7d-b201-900002a96d18}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driver.c">
@@ -49,6 +55,9 @@
     <ClCompile Include="EnumObHandleHooks.c">
       <Filter>提权</Filter>
     </ClCompile>
+    <ClCompile Include="enumSystemInfo.c">
+      <Filter>枚举信息</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="processProtect.h">
@@ -65,6 +74,12 @@
     </ClInclude>
     <ClInclude Include="EnumObHandleHooks.h">
       <Filter>提权</Filter>
+    </ClInclude>
+    <ClInclude Include="enumSystemInfo.h">
+      <Filter>枚举信息</Filter>
+    </ClInclude>
+    <ClInclude Include="findCode.h">
+      <Filter>根据特征码搜索内存</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

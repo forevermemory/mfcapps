@@ -6,6 +6,8 @@
 #include "processProtect.h"
 #include "handle.h"
 #include "processCallback.h"
+#include "enumSystemInfo.h"
+
 
 #define PAGEDCODE code_seg("PAGE")
 #define LOCKEDCODE code_seg()
@@ -66,12 +68,19 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 
 	//创建驱动设备对象
 	status = CreateDevice(pDriverObject);
-
+	//EnumPspCidTable();
+	// Test_ZwQuerySystemInformation();
+	// EnumDriverObjects(pDriverObject);
+	EnumObpKernelHandleTable();
+	
 	// 注册OpenProcess回调
 	InstallProcessProtect();
 	// 提权
 	InstallProcessPrivilege();
+	//ObReferenceObjectByHandle()
 
+	//UINT64 vvvv= FindObpKernelHandleTable();
+	//DbgPrint("ObpKernelHandleTable:%llx\n", vvvv);
 	// 注册进程普通回调
 	PsSetCreateProcessNotifyRoutine(sCreateProcessNotifyRoutine, FALSE);
 
@@ -130,6 +139,7 @@ VOID HelloDDKUnload(IN PDRIVER_OBJECT pDriverObject)
 	UNICODE_STRING pLinkName;
 	RtlInitUnicodeString(&pLinkName, LinkName);
 	IoDeleteSymbolicLink(&pLinkName);
+
 
 	// 卸载进程保护
 	UnInstallProcessProtect();

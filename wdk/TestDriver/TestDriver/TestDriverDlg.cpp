@@ -97,6 +97,7 @@ BEGIN_MESSAGE_MAP(CTestDriverDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_HANDLES, &CTestDriverDlg::OnBnClickedButtonR3EnumHandles)
 	ON_BN_CLICKED(IDC_BUTTON_R3_NtQueryInformationProcess, &CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess)
 	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_SYSTEMINFO, &CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo)
+	ON_BN_CLICKED(IDC_BUTTON_R3_OPEN_1000_HANDLE, &CTestDriverDlg::OnBnClickedButtonR3Open1000Handle)
 END_MESSAGE_MAP()
 
 
@@ -740,7 +741,7 @@ void CTestDriverDlg::OnBnClickedButtonR3EnumHandles()
 	ULONG handleCount = info->HandleCount;
 	for (size_t i = 0; i < handleCount; i++)
 	{
-		if (info->Handles[i].UniqueProcessId == 57184)
+		if (info->Handles[i].UniqueProcessId == 23624)
 		{
 			HANDLE newHandle = NULL;
 			DWORD dwFlags1 = 0;
@@ -935,7 +936,7 @@ void CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo()
 	SYSTEM_PROCESS_INFORMATION processInfo = { 0 };
 	status = NtQuerySystemInformation(SystemProcessInformation, &processInfo,
 		sizeof(SYSTEM_PROCESS_INFORMATION),
-		&realLen); // realLen = 48
+		&realLen); 
 	printf("status:%X , realLen:%d\n", status, realLen);
 	if (status == STATUS_INFO_LENGTH_MISMATCH)
 	{
@@ -944,17 +945,27 @@ void CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo()
 			realLen,
 			&realLen);
 		PSYSTEM_PROCESS_INFORMATION pInfo = (PSYSTEM_PROCESS_INFORMATION)buffer;
-		for (size_t i = 0; i < pInfo->NumberOfThreads; i++)
+		while (pInfo->NextEntryOffset)
 		{
-			printf("内核态时间:%lld, 优先级:%d, 线程状态:%d\n", 
-				pInfo->Threads[i].KernelTime.QuadPart,
-				pInfo->Threads[i].Priority,
-				pInfo->Threads[i].ThreadState
-				);
+			wprintf(L"pid:%d, thread:%d, name:%ws\n",
+				(DWORD)pInfo->UniqueProcessId,pInfo->NumberOfThreads, pInfo->ImageName.Buffer);
+
+			pInfo = (PSYSTEM_PROCESS_INFORMATION)((UINT64)(pInfo)+pInfo->NextEntryOffset);
+			// 线程信息
+			//for (size_t i = 0; i < pInfo->NumberOfThreads; i++)
+			//{
+			//	printf("内核态时间:%lld, 优先级:%d, 线程状态:%d\n", 
+			//		pInfo->Threads[i].KernelTime.QuadPart,
+			//		pInfo->Threads[i].Priority,
+			//		pInfo->Threads[i].ThreadState
+			//		);
+			//}
 		}
+
 		printf("\n");
 	}
 
+	return;
 	// 设备信息
 	SYSTEM_DEVICE_INFORMATION deviceInfo = { 0 };
 	status = NtQuerySystemInformation(SystemDeviceInformation, &deviceInfo,
@@ -1006,5 +1017,29 @@ void CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo()
 		free(buffer);
 	}
 	printf("=====end=====\n");
+
+}
+
+
+void CTestDriverDlg::OnBnClickedButtonR3Open1000Handle()
+{
+	// TODO: 在此添加控件通知处理程序代码
+
+	UpdateData(TRUE);
+	if (m_Pid_Privilege == 0)
+	{
+		MessageBoxA(m_hWnd, 0, "请输入被提权进程的pid", 0);
+		return;
+	}
+
+
+	for (size_t i = 0; i < 1000; i++)
+	{
+		HANDLE hh = OpenProcess(PROCESS_ALL_ACCESS, FALSE, m_Pid_Privilege);
+
+		printf("HANDLE:%x\n", hh);
+
+	}
+	printf("finisned\n");
 
 }

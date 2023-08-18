@@ -1,7 +1,14 @@
 #pragma once
 
 #include <ntddk.h>
-
+//ObReferenceObjectByHandle(
+//    _In_ HANDLE Handle,
+//    _In_ ACCESS_MASK DesiredAccess,
+//    _In_opt_ POBJECT_TYPE ObjectType,
+//    _In_ KPROCESSOR_MODE AccessMode,
+//    _Out_ PVOID* Object,
+//    _Out_opt_ POBJECT_HANDLE_INFORMATION HandleInformation
+//);
 
 //typedef struct _R3R0_Param {
 //    UINT64 handle;      // 目标进程pid / 句柄
