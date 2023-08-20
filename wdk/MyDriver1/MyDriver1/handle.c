@@ -3,6 +3,7 @@
 #include "processProtect.h"
 #include "virtualMemoryRW.h"
 #include "EnumObHandleHooks.h"
+#include "enumSystemInfo.h"
 
 // 未文档函数
 char* PsGetProcessImageFileName(PEPROCESS);
@@ -491,6 +492,37 @@ void Handle_IOCTL_移除指定pid提权(IN PIRP pIrp)
 
 	UINT64 retLen = 0;
 	RemovePidToPrivilege(pid);
+
+	// 完成IRP
+	pIrp->IoStatus.Status = STATUS_SUCCESS;
+	pIrp->IoStatus.Information = retLen;	// bytes return
+	IoCompleteRequest(pIrp, IO_NO_INCREMENT);
+}
+
+
+
+void Handle_IOCTL_遍历指定进程的私有句柄表(IN PIRP pIrp)
+{
+	UINT64* param = (UINT64*)pIrp->AssociatedIrp.SystemBuffer;
+
+	// 传入参数
+	// UINT64 handle;      // 目标进程pid / 句柄
+	UINT64 pid = (UINT64)param[0];
+	DbgPrint("sys: Handle_IOCTL_移除指定pid提权 pid=%d\n", pid);
+
+
+	UINT64 retLen = 0;
+
+	PEPROCESS pEPROCESS = NULL;
+	if (STATUS_SUCCESS == PsLookupProcessByProcessId((HANDLE)pid, &pEPROCESS))
+	{
+		EnumProcessHandleTable(pEPROCESS);
+		ObDereferenceObject(pEPROCESS);
+	}
+	else
+	{
+		DbgPrint("sys: PsLookupProcessByProcessId Fail...\n");
+	}
 
 	// 完成IRP
 	pIrp->IoStatus.Status = STATUS_SUCCESS;

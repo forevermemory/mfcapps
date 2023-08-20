@@ -12,7 +12,6 @@
 
 UINT64 FindPspCidTable()
 {
-
 	// 通过PsLoadedModuleList找到内核模块
 	UNICODE_STRING usPsLoadedModuleList = RTL_CONSTANT_STRING(L"PsLoadedModuleList");
 	PVOID PsLoadedListModule = MmGetSystemRoutineAddress(&usPsLoadedModuleList);
@@ -58,7 +57,6 @@ UINT64 FindPspCidTable()
 				fffff806`79f15e86 0fb6f2          movzx   esi, dl
 				fffff806`79f15e89 4889442420      mov     qword ptr[rsp + 20h], rax
 				fffff806`79f15e8e 4889442428      mov     qword ptr[rsp + 28h], rax
-
 				fffff806`79f15e93 488b05 7e06f0ff  mov     rax, qword ptr[nt!PspCidTable(fffff806`79e16518)]
 				fffff806`79f15e9a f7c1fc030000    test    ecx, 3FCh
 
@@ -198,13 +196,6 @@ void EnumGlobalHandleTables_1(UINT64 BaseAddr, UINT32 index2, UINT32 index3)
 		__try
 		{
 			//// 方式1
-
-			//HANDLE PID = PsGetProcessId(process);
-			//if (PID < 0xE000000)
-			//{
-			//	//PsLookupProcessByProcessId()
-			//	
-			//}
 
 						/// // 3333
 			UINT32 INDEX = i * 4 + 1024 * index2 + 512 * index3 * 1024;
@@ -577,4 +568,158 @@ void EnumDriverObjects(PDRIVER_OBJECT driverObject)
 		}
 		pCurrentListEntry = pCurrentListEntry->Flink;
 	}
+}
+
+
+
+
+
+
+
+
+
+int total = 0;
+
+//index2：第几个二级表
+//index3：第几个三级表
+void EnumProcessHandleTable_1(UINT64 BaseAddr, UINT32 index2, UINT32 index3)
+{
+
+	UNICODE_STRING objTypeStr = RTL_CONSTANT_STRING(L"UNKNOWN");
+
+	// 遍历一级表（每个表项大小 16 ），表大小 4k，所以遍历 4096/16 = 526 次
+	for (INT i = 0; i < 256; i++)
+	{
+		UINT32 INDEX = i * 4 + 1024 * index2 + 512 * index3 * 1024;
+		UINT64 ObjectHeader = *(UINT64*)(BaseAddr + (i * 16)); 
+		UINT64 Mask = *(UINT64*)(BaseAddr + (i * 16) + 8);
+
+		// win10
+		// 解密 8504e7a6`9380fffb  --> ffff 8504e7a6`9380
+		ObjectHeader = ((INT64)ObjectHeader >> 0x10) & 0xfffffffffffffff0;
+
+		//DbgPrint("sys: ObjectHeader:%llx, index: %d %x\n", ObjectHeader, INDEX, INDEX);
+
+		if (!MmIsAddressValid(ObjectHeader))
+		{
+			continue;
+		}
+
+		POBJECT_TYPE objType = NULL;
+
+		__try
+		{
+
+			//// 方式1
+			objType = ObGetObjectType(ObjectHeader+0x30);
+			if (objType)
+			{
+				objTypeStr = objType->Name;
+			}
+			
+
+			//DbgPrint("sys: ObjectHeader:%llx, Mask:%llx, index: %d %x\n", ObjectHeader, Mask, INDEX, INDEX);
+			DbgPrint("sys: ObjectHeader:%llx, Mask:%llx, index: %d %x, type: %wZ\n",
+				ObjectHeader, Mask, INDEX, INDEX, objTypeStr);
+
+			////if (RtlCompareUnicodeString(&objTypeStr, &ProcessStr, TRUE) == 0)
+			//{
+			//	char* PName = PsGetProcessImageFileName(process);
+			//	//	DbgPrint("sys: process:%llx, PID: %d,PNAME: %s\n", process, PID, PName);
+			//	DbgPrint("sys: ObjectAddr:%llx, index: %d %x, type: %wZ, processName:%s\n",
+			//		ObjectAddr, INDEX, INDEX, objTypeStr, PName);
+			//}
+
+
+		}
+		__except (1)
+		{
+			DbgPrint("process ObjectAddr:%llx\n", ObjectHeader);
+		}
+
+	}
+}
+
+//index3：第几个三级表
+void EnumProcessHandleTable_2(UINT64 BaseAddr, UINT32 index3)
+{
+	// 遍历二级表（每个表项大小 8）,表大小 4k，所以遍历 4096/8 = 512 次
+	ULONG64 ul_baseAddr_1 = 0;
+	for (INT i = 0; i < 512; i++) {
+		if (!MmIsAddressValid((PVOID64)(BaseAddr + i * 8))) {
+			//DbgPrint("[LYSM] 非法二级表指针（1）:%p\n", BaseAddr + i * 8);
+			continue;
+		}
+		if (!MmIsAddressValid((PVOID64) * (PULONG64)(BaseAddr + i * 8))) {
+			//DbgPrint("[LYSM] 非法二级表指针（2）:%p\n", BaseAddr + i * 8);
+			continue;
+		}
+		ul_baseAddr_1 = *(PULONG64)(BaseAddr + i * 8);
+		DbgPrint("sys: level2: %d , %llx\n", i + 1, ul_baseAddr_1);
+		EnumProcessHandleTable_1(ul_baseAddr_1, i, index3);
+	}
+
+}
+
+
+void EnumProcessHandleTable_3(UINT64 BaseAddr)
+{
+	// 遍历二级表（每个表项大小 8）,表大小 4k，所以遍历 4096/8 = 512 次
+	// 遍历三级表（每个表项大小 8）,表大小 4k，所以遍历 4096/8 = 512 次
+	ULONG64 ul_baseAddr_2 = 0;
+	for (INT i = 0; i < 512; i++) {
+		if (!MmIsAddressValid((PVOID64)(BaseAddr + i * 8)))
+		{
+			continue;
+		}
+		if (!MmIsAddressValid((PVOID64) * (PULONG64)(BaseAddr + i * 8)))
+		{
+			continue;
+		}
+		ul_baseAddr_2 = *(PULONG64)(BaseAddr + i * 8);
+		EnumProcessHandleTable_2(ul_baseAddr_2, i);
+	}
+
+}
+
+
+void EnumProcessHandleTable(PEPROCESS pEprocess)
+{
+	DbgPrint("sys: start EnumProcessHandleTable： pEprocess:%llx \n", pEprocess);
+
+	// 获取HandleTable 
+	//+0x418 ObjectTable      : 0xffffdc82`0f7ed9c0 _HANDLE_TABLE 
+	PHANDLE_TABLE handleTable =  (PHANDLE_TABLE) (*(UINT64*)((UINT64)pEprocess + 0x418));
+
+	DbgPrint("find handleTable [%llX]\n", handleTable);
+	DbgPrint("find TableCode [%llX]\n", handleTable->TableCode);
+
+
+	// 存在三级表的情况，判断是几级表 
+	UINT32 level = handleTable->TableCode & 3;
+
+	DbgPrint("PEPROCESS handle level [%d]\n",(level + 1));
+	switch (level)
+	{
+	case 0:
+	{
+		// [UINT64]
+		EnumProcessHandleTable_1(handleTable->TableCode & (~3), 0, 0);
+		break;
+	}
+	case 1:
+	{
+		// [UINT64,UINT64]  ==> 指向{UINT64,UINT64}
+		EnumProcessHandleTable_2(handleTable->TableCode & (~3), 0);
+		break;
+	}
+	case 2:
+	{
+		EnumProcessHandleTable_3(handleTable->TableCode & (~3));
+		break;
+	}
+	default:
+		break;
+	}
+
 }

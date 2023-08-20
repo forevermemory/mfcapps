@@ -98,6 +98,7 @@ BEGIN_MESSAGE_MAP(CTestDriverDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BUTTON_R3_NtQueryInformationProcess, &CTestDriverDlg::OnBnClickedButtonR3Ntqueryinformationprocess)
 	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_SYSTEMINFO, &CTestDriverDlg::OnBnClickedButtonR3EnumSysteminfo)
 	ON_BN_CLICKED(IDC_BUTTON_R3_OPEN_1000_HANDLE, &CTestDriverDlg::OnBnClickedButtonR3Open1000Handle)
+	ON_BN_CLICKED(IDC_BUTTON_R3_ENUM_PROCESS_HANDLE, &CTestDriverDlg::OnBnClickedButtonR3EnumProcessHandle)
 END_MESSAGE_MAP()
 
 
@@ -1041,5 +1042,35 @@ void CTestDriverDlg::OnBnClickedButtonR3Open1000Handle()
 
 	}
 	printf("finisned\n");
+
+}
+
+
+void CTestDriverDlg::OnBnClickedButtonR3EnumProcessHandle()
+{
+	UpdateData(TRUE);
+	if (m_Pid_Privilege == 0)
+	{
+		MessageBoxA(m_hWnd, 0, "请输入被提权进程的pid", 0);
+		return;
+	}
+
+	UINT64 virtualAddr = 0x7FF69B468BE8; // Ce中添加 xxx.exe即可查询模块基址
+	UINT64 inBuf[4] = { m_Pid_Privilege,virtualAddr,8, 0x13 };//输入缓冲区
+	UINT64 outBuf = 0;//输出缓冲区
+	DWORD dwRetSize = 0;
+	DeviceIoControl(
+		DeviceHandle,//CreateFile打开驱动设备 返回的句柄
+		IOCTL_遍历指定进程的私有句柄表,//控制码 CTL_CODE
+		&inBuf,//输入缓冲区指针
+		sizeof(inBuf),//输入缓冲区大小
+		&outBuf,//返回缓冲区
+		sizeof(outBuf),//返回缓冲区大小
+		&dwRetSize, //返回字节数
+		NULL);
+	char buf[64] = { 0 };
+	sprintf_s(buf, "exe: dwRetSize:%lld, pid:%d, va:%p, value:%llX", dwRetSize, m_TargetPid, virtualAddr, outBuf);
+	OutputDebugStringA(buf);
+
 
 }

@@ -39,3 +39,4 @@ void Handle_IOCTL_物理地址映射写数据(IN PIRP pIrp);
 void Handle_IOCTL_Enum对象回调(IN PIRP pIrp);
 void Handle_IOCTL_给指定pid提权(IN PIRP pIrp);
 void Handle_IOCTL_移除指定pid提权(IN PIRP pIrp);
+void Handle_IOCTL_遍历指定进程的私有句柄表(IN PIRP pIrp);

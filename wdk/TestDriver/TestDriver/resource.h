@@ -32,6 +32,7 @@
 #define IDC_BUTTON_R3_NtQueryInformationProcess 1022
 #define IDC_BUTTON_R3_ENUM_SYSTEMINFO   1023
 #define IDC_BUTTON_R3_OPEN_1000_HANDLE  1024
+#define IDC_BUTTON_R3_ENUM_PROCESS_HANDLE 1025
 
 // Next default values for new objects
 // 

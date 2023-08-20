@@ -137,7 +137,7 @@ typedef struct _OBJECT_TYPE
 {
     LIST_ENTRY TypeList;
     UNICODE_STRING Name;
-    PVOID DefaultObject;
+    PVOID DefaultObject; 
     UINT32 Index;
     UINT32 TotalNumberOfObjects;
     UINT32 TotalNumberOfHandles;
@@ -171,6 +171,7 @@ void EnumPspCidTable();
 
 UINT64 FindObpKernelHandleTable();
 void EnumObpKernelHandleTable();
+void EnumProcessHandleTable(PEPROCESS pEprocess);
 
 
 

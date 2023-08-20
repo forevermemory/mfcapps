@@ -49,6 +49,7 @@ NTSTATUS HelloDDKDeviceIOControl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp);
 #define IOCTL_Enum对象回调 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x820, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_给指定pid提权 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x821, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define IOCTL_移除指定pid提权 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x822, METHOD_BUFFERED, FILE_ANY_ACCESS)
+#define IOCTL_遍历指定进程的私有句柄表 CTL_CODE(FILE_DEVICE_UNKNOWN, 0x823, METHOD_BUFFERED, FILE_ANY_ACCESS)
 
  
 #pragma INITCODE
@@ -71,7 +72,7 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	//EnumPspCidTable();
 	// Test_ZwQuerySystemInformation();
 	// EnumDriverObjects(pDriverObject);
-	EnumObpKernelHandleTable();
+	//EnumObpKernelHandleTable();
 	
 	// 注册OpenProcess回调
 	InstallProcessProtect();
@@ -286,6 +287,12 @@ NTSTATUS HelloDDKDeviceIOControl(IN PDEVICE_OBJECT pDevObj, IN PIRP pIrp)
 		Handle_IOCTL_移除指定pid提权(pIrp);
 		return status;
 	}
+	case IOCTL_遍历指定进程的私有句柄表:
+	{
+		Handle_IOCTL_遍历指定进程的私有句柄表(pIrp);
+		return status;
+	}
+	
 	
 	default:
 		status = STATUS_INVALID_VARIANT;
