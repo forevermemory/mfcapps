@@ -1,6 +1,6 @@
 #pragma once
 
-//#include <ntddk.h>
+#include "define.h"
 
 //PspCidTable 	UNICODE_STRING usPsLoadedModuleList = RTL_CONSTANT_STRING(L"PsLoadedModuleList");
 //MmGetSystemRoutineAddress(&usPsLoadedModuleList);
@@ -179,3 +179,6 @@ char* PsGetProcessImageFileName(PEPROCESS);
 void Test_ZwQuerySystemInformation();
 
 void EnumDriverObjects(PDRIVER_OBJECT driverObject);
+//IoDriverObjectType
+
+void EnumIoDriverObjectType();

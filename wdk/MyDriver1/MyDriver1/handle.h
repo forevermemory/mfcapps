@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ntddk.h>
+#include "define.h"
 //ObReferenceObjectByHandle(
 //    _In_ HANDLE Handle,
 //    _In_ ACCESS_MASK DesiredAccess,

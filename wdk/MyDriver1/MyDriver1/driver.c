@@ -7,6 +7,8 @@
 #include "handle.h"
 #include "processCallback.h"
 #include "enumSystemInfo.h"
+#include "enumDpc.h"
+#include "EnumObHandleHooks.h"
 
 
 #define PAGEDCODE code_seg("PAGE")
@@ -71,14 +73,22 @@ NTSTATUS DriverEntry(IN PDRIVER_OBJECT pDriverObject, IN PUNICODE_STRING pRegist
 	status = CreateDevice(pDriverObject);
 	//EnumPspCidTable();
 	// Test_ZwQuerySystemInformation();
-	// EnumDriverObjects(pDriverObject);
+	EnumDriverObjects(pDriverObject);
+	DbgPrint("===============\n");
+	EnumDriverObjects(NULL);
 	//EnumObpKernelHandleTable();
-	
+
+	//InstallKernelDPC(pDriverObject->DeviceObject);
+	//EnumKernelDPC();
+	//EnumIoDriverObjectType();
+	//EnumObRegisterCallBacks();
 	// 注册OpenProcess回调
 	InstallProcessProtect();
 	// 提权
 	InstallProcessPrivilege();
 	//ObReferenceObjectByHandle()
+
+
 
 	//UINT64 vvvv= FindObpKernelHandleTable();
 	//DbgPrint("ObpKernelHandleTable:%llx\n", vvvv);

@@ -35,6 +35,12 @@
     <Filter Include="根据特征码搜索内存">
       <UniqueIdentifier>{2eadbd4e-ee56-4d7d-b201-900002a96d18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="DPC">
+      <UniqueIdentifier>{ddde3e8d-2efb-4840-9463-93127c73053d}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="工具">
+      <UniqueIdentifier>{2fe4c2a5-b2f6-46a6-89ba-a28e4b77094b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driver.c">
@@ -58,6 +64,15 @@
     <ClCompile Include="enumSystemInfo.c">
       <Filter>枚举信息</Filter>
     </ClCompile>
+    <ClCompile Include="enumDPC.c">
+      <Filter>DPC</Filter>
+    </ClCompile>
+    <ClCompile Include="findCode.c">
+      <Filter>根据特征码搜索内存</Filter>
+    </ClCompile>
+    <ClCompile Include="utils.c">
+      <Filter>工具</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="processProtect.h">
@@ -80,6 +95,15 @@
     </ClInclude>
     <ClInclude Include="findCode.h">
       <Filter>根据特征码搜索内存</Filter>
+    </ClInclude>
+    <ClInclude Include="enumDpc.h">
+      <Filter>DPC</Filter>
+    </ClInclude>
+    <ClInclude Include="define.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="utils.h">
+      <Filter>工具</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

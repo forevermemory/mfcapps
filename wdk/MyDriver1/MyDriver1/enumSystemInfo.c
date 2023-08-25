@@ -1,7 +1,9 @@
-#include <ntifs.h>
+
+
+
 #include "enumSystemInfo.h"
+#include "utils.h"
 #include "findCode.h"
-#include "EnumObHandleHooks.h"
 
 //PspCidTable PspCidTable里面记录的是所有进程和线程的信息
 
@@ -104,7 +106,7 @@ UINT64 FindObpKernelHandleTable()
 	PLIST_ENTRY Head = NULL;
 	PLIST_ENTRY Next = NULL;
 
-
+	
 	if (Begin == NULL)
 		return 0;
 
@@ -525,49 +527,66 @@ void EnumDriverObjects(PDRIVER_OBJECT driverObject)
 {
 	ULONG count = 0;
 	NTSTATUS Status;
+	PLDR_DATA_TABLE_ENTRY  pLdr;
 
-	// 可以使用传入的driverObject
-	PLDR_DATA_TABLE_ENTRY  pLdr = (PLDR_DATA_TABLE_ENTRY)driverObject->DriverSection;
-	PLIST_ENTRY pListEntry = pLdr->InLoadOrderLinks.Flink;
-	PLIST_ENTRY pCurrentListEntry = pListEntry->Flink;
-
-	PLDR_DATA_TABLE_ENTRY pModule = NULL;
-	while (pCurrentListEntry != pListEntry)
+	if (NULL == driverObject)
 	{
-		pModule = CONTAINING_RECORD(pCurrentListEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-		if (pModule->BaseDllName.Buffer != 0)
+		//// 方式1：通过PsLoadedModuleList WIN10+
+		UNICODE_STRING usPsLoadedModuleList = RTL_CONSTANT_STRING(L"PsLoadedModuleList");
+		PVOID PsLoadedListModule = MmGetSystemRoutineAddress(&usPsLoadedModuleList);
+		if (NULL == PsLoadedListModule)
 		{
-			DbgPrint("基址:%p --->大小:%X---> 模块名:%wZ \r\n",
-				pModule->DllBase, pModule->SizeOfImage, pModule->BaseDllName);
+			DbgPrint("获取PsLoadedListModule失败\n");
+			return;
 		}
-		pCurrentListEntry = pCurrentListEntry->Flink;
+		pLdr = (PLDR_DATA_TABLE_ENTRY)PsLoadedListModule;
+	}
+	else
+	{
+		// 方式二: 使用传入的driverObject
+		pLdr = (PLDR_DATA_TABLE_ENTRY)driverObject->DriverSection;
 	}
 
-	DbgPrint("==========================================================\n");
 
-	// 或者通过PsLoadedModuleList WIN10+
-	UNICODE_STRING usPsLoadedModuleList = RTL_CONSTANT_STRING(L"PsLoadedModuleList");
-	PVOID PsLoadedListModule = MmGetSystemRoutineAddress(&usPsLoadedModuleList);
-	if (NULL == PsLoadedListModule)
+
+	PLIST_ENTRY start = pLdr->InLoadOrderLinks.Flink;
+	PLIST_ENTRY Current = start->Flink;
+
+	PLDR_DATA_TABLE_ENTRY pEntry = NULL;
+	while (Current != start)
 	{
-		DbgPrint("获取PsLoadedListModule失败\n");
-		return;
-	}
-	PLDR_DATA_TABLE_ENTRY Begin = (PLDR_DATA_TABLE_ENTRY)PsLoadedListModule;
-	DbgPrint("PLDR_DATA_TABLE_ENTRY: [%llx] [%llx]\n", pLdr, Begin);
-	pModule = NULL;
-	pListEntry = Begin->InLoadOrderLinks.Flink;
-	pCurrentListEntry = pListEntry->Flink;
-	while (pCurrentListEntry != pListEntry)
-	{
-		pModule = CONTAINING_RECORD(pCurrentListEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-		if (pModule->BaseDllName.Buffer != 0)
+
+		pEntry = CONTAINING_RECORD(Current, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+
+		Current = Current->Flink;
+
+		///// 根据模块名称获取DriverObject   \\Driver\\xxx
+		UNICODE_STRING  Source = pEntry->BaseDllName;
+		Source.Length -= 8; // 去除 .sys后缀
+
+		WCHAR dst_buf[256];
+		UNICODE_STRING driverName1;
+		UNICODE_STRING prefix = RTL_CONSTANT_STRING(L"\\Driver\\");
+		RtlInitEmptyUnicodeString(&driverName1, dst_buf, sizeof(dst_buf));
+		
+		Status = RtlAppendUnicodeStringToString(&driverName1, &prefix);
+		Status = RtlAppendUnicodeStringToString(&driverName1, &Source);
+
+		PDRIVER_OBJECT Driver = NULL;
+		ObReferenceObjectByName(&driverName1, FILE_ALL_ACCESS, 0, 0,
+			*IoDriverObjectType, KernelMode, NULL, &Driver);// 通过驱动的到驱动的对象
+		//DbgPrint("===:%x [%wZ]  [%wZ]\n", Status, driverName1, Source);
+
+		if (pEntry->BaseDllName.Buffer != 0)
 		{
-			DbgPrint("基址:%p --->大小:%X---> 模块名:%wZ \r\n",
-				pModule->DllBase, pModule->SizeOfImage, pModule->BaseDllName);
+			DbgPrint("OBJECT:%llx, 基址:%p --->大小:%X---> 模块名:%wZ \r\n",
+				Driver, pEntry->DllBase,
+				pEntry->SizeOfImage, pEntry->BaseDllName);
 		}
-		pCurrentListEntry = pCurrentListEntry->Flink;
+
 	}
+
+
 }
 
 
@@ -721,5 +740,71 @@ void EnumProcessHandleTable(PEPROCESS pEprocess)
 	default:
 		break;
 	}
+
+}
+
+
+
+
+
+
+
+
+
+void EnumIoDriverObjectType()
+{
+	//UNICODE_STRING pIoDriverObjectType = RTL_CONSTANT_STRING(L"IoDriverObjectType");
+	//PVOID IoDriverObjectType = MmGetSystemRoutineAddress(&pIoDriverObjectType);
+	//if (NULL == IoDriverObjectType)
+	//{
+	//	DbgPrint("获取IoDriverObjectType失败\n");
+	//	return ;
+	//}
+
+	DbgPrint("sys: IoDriverObjectType:%llx\n", IoDriverObjectType);
+
+	ULONG64 ObDriverCallbackListHead = *(ULONG64*)IoDriverObjectType + 0xc8;
+
+	PLIST_ENTRY CurrEntry = NULL;
+	POB_CALLBACK pObCallback;
+
+	CurrEntry = ((PLIST_ENTRY)ObDriverCallbackListHead)->Flink;
+	if (CurrEntry == NULL || !MmIsAddressValid(CurrEntry))
+	{
+		DbgPrint("获取CurrEntry失败\n");
+		return ;
+	}
+
+	WCHAR* szDriverBaseName =  ExAllocatePool(NonPagedPool, 600);
+	if (szDriverBaseName == NULL)
+	{
+		DbgPrint("sys: 分配szDriverBaseName失败\n");
+		return;
+	}
+	RtlZeroMemory(szDriverBaseName, 600);
+	//DbgBreakPoint();
+	do
+	{
+		pObCallback = (POB_CALLBACK)CurrEntry;
+		if (pObCallback->ObHandle != 0)
+		{
+			if (ObGetDriverNameByPoint(pObCallback->PreCall, szDriverBaseName))
+			{
+				DbgPrint("sys: DriverName=%S ObHandle=%p  Index=%wZ PreCall=%p PostCall=%p \n",
+					szDriverBaseName,
+					pObCallback->ObHandle,
+					&pObCallback->ObHandle->AltitudeString,
+					pObCallback->PreCall,
+					pObCallback->PostCall);
+			}
+	
+		}
+
+		CurrEntry = CurrEntry->Flink;
+
+	} while (CurrEntry != (PLIST_ENTRY)ObDriverCallbackListHead);
+
+	ExFreePool(szDriverBaseName);
+
 
 }

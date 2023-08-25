@@ -96,20 +96,26 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="driver.c" />
+    <ClCompile Include="enumDPC.c" />
     <ClCompile Include="enumSystemInfo.c" />
     <ClCompile Include="EnumObHandleHooks.c" />
+    <ClCompile Include="findCode.c" />
     <ClCompile Include="handle.c" />
     <ClCompile Include="processCallback.c" />
     <ClCompile Include="processProtect.c" />
+    <ClCompile Include="utils.c" />
     <ClCompile Include="virtualMemoryRW.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="define.h" />
+    <ClInclude Include="enumDpc.h" />
     <ClInclude Include="enumSystemInfo.h" />
     <ClInclude Include="EnumObHandleHooks.h" />
     <ClInclude Include="findCode.h" />
     <ClInclude Include="handle.h" />
     <ClInclude Include="processCallback.h" />
     <ClInclude Include="processProtect.h" />
+    <ClInclude Include="utils.h" />
     <ClInclude Include="virtualMemoryRW.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
