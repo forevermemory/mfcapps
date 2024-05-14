@@ -154,7 +154,7 @@ BOOL CLordPEDlg::OnInitDialog()
 		//CButton * bt =  (CButton*)GetDlgItem(BTN_SECTIONS);
 
 
-	//PrintUI();
+	// PrintUI();
 	
 	//m_szPath2 = "C:\\Windows\\System32\\ntdll.dll";
 	//ParsePeFile();
@@ -381,8 +381,12 @@ BOOL CLordPEDlg::ParsePeFile()
 		m_Machine = "Intel Itanium";
 		break;
 	case IMAGE_FILE_MACHINE_AMD64:
+#ifdef _WIN64
 		m_pOptHeader64 = &m_pNtHeader->OptionalHeader;
 		m_Machine = "x64";
+#endif // _WIN64
+
+	
 		break;
 	default:
 		break;
@@ -392,6 +396,12 @@ BOOL CLordPEDlg::ParsePeFile()
 	////////////////////////////// x86和x64可选头结构体定义不一样
 	if (IMAGE_FILE_MACHINE_AMD64 == m_pFileHeader->Machine)
 	{
+#ifndef _WIN64
+		MessageBoxA("请用64位程序打开");
+		return false;
+#endif // !_WIN64
+
+
 		printf("====================================x64\n");
 		// Subsystem
 		memset(buf, 0, 64);

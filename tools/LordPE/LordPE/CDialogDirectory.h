@@ -65,4 +65,5 @@ public:
 	afx_msg void OnBnClickedButtonImportDetail();
 	afx_msg void OnBnClickedButtonIat();
 	afx_msg void OnBnClickedButtonRelocation();
+	afx_msg void OnBnClickedButtonImportException();
 };

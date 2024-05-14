@@ -21,6 +21,7 @@
 #define IDD_DIALOG_IAT                  140
 #define IDD_DIALOG_DIRECTORY_IMPORT1    141
 #define IDD_DIALOG_DIRECTORY_RELOCATION 141
+#define IDD_DIALOG_DIRECTORY_EXCEPTION  144
 #define IDC_EDIT1                       1000
 #define IDC_EDIT2                       1001
 #define IDC_EDIT3                       1002
@@ -102,14 +103,20 @@
 #define IDC_BUTTON_IAT                  1056
 #define IDC_LIST_DLL_LIST               1057
 #define IDC_BUTTON_RELOCATION           1057
+#define IDC_BUTTON_IMPORT_EXCEPTION     1058
+#define IDC_LIST_EXCEPTION              1063
+#define IDC_EDIT_EXCEPTION_RVA          1064
+#define IDC_EDIT_EXCEPTION_COUNT        1065
+#define IDC_STATIC_EXCEPTION_COUNT      1066
+#define IDC_STATIC_EXCEPTION_RVA        1067
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        144
+#define _APS_NEXT_RESOURCE_VALUE        146
 #define _APS_NEXT_COMMAND_VALUE         32771
-#define _APS_NEXT_CONTROL_VALUE         1062
+#define _APS_NEXT_CONTROL_VALUE         1068
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

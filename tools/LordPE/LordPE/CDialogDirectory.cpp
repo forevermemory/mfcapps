@@ -10,6 +10,7 @@
 #include "CDialogImport.h"
 #include "CDialogIAT.h"
 #include "CDialogRelocation.h"
+#include "CDialogException.h"
 
 #include <string>
 
@@ -104,6 +105,7 @@ BEGIN_MESSAGE_MAP(CDialogDirectory, CDialogEx)
 
 	ON_BN_CLICKED(IDC_BUTTON_RELOCATION, &CDialogDirectory::OnBnClickedButtonRelocation)
 
+	ON_BN_CLICKED(IDC_BUTTON_IMPORT_EXCEPTION, &CDialogDirectory::OnBnClickedButtonImportException)
 END_MESSAGE_MAP()
 
 
@@ -432,4 +434,12 @@ void CDialogDirectory::OnBnClickedButtonIat()
 		pImport++;
 	}
 
+}
+
+
+void CDialogDirectory::OnBnClickedButtonImportException()
+{
+	// IDC_BUTTON_IMPORT_EXCEPTION
+	CDialogException dlg;
+	dlg.DoModal();
 }

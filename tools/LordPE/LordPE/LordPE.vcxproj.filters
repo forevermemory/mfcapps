@@ -57,6 +57,9 @@
     <ClInclude Include="CDialogRelocation.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="CDialogException.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="LordPE.cpp">
@@ -90,6 +93,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="CDialogRelocation.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="CDialogException.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
